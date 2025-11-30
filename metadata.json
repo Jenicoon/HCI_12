@@ -1,0 +1,5 @@
+{
+  "name": "AI Fitness Assistant",
+  "description": "An AI-powered personal fitness assistant that designs optimized workout routines and diet plans based on your body, goals, and health status. It provides continuous feedback and motivation to help you build and maintain healthy habits.",
+  "requestFramePermissions": []
+}
