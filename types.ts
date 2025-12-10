@@ -1,3 +1,5 @@
+export type UserRole = 'owner' | 'member';
+
 export interface UserProfile {
   goal: 'weightLoss' | 'muscleGain' | 'rehab' | string;
   height: number;
@@ -7,6 +9,28 @@ export interface UserProfile {
   workoutPreference: 'home' | 'gym';
   availableEquipment?: string;
 }
+
+export interface AccountBase {
+  id: string;
+  role: UserRole;
+  name: string;
+  email: string;
+  password: string;
+  createdAt: string;
+}
+
+export interface OwnerAccount extends AccountBase {
+  role: 'owner';
+  phone?: string;
+  businessName?: string;
+}
+
+export interface MemberAccount extends AccountBase {
+  role: 'member';
+  profile?: UserProfile | null;
+}
+
+export type UserAccount = OwnerAccount | MemberAccount;
 
 export interface Exercise {
   name: string;
@@ -54,13 +78,30 @@ export interface Equipment {
   id: string;
   name: string;
   category: 'cardio' | 'machine' | 'freeWeight';
+  quantity?: number;
+}
+
+export interface OperatingHours {
+  weekdays: string;
+  weekends: string;
+  holidays?: string;
 }
 
 export interface Gym {
   id: string;
+  ownerId: string;
   name: string;
   address: string;
+  latitude: number;
+  longitude: number;
+  description?: string;
+  photos: string[];
+  amenities: string[];
   equipment: Equipment[];
+  operatingHours: OperatingHours;
+  createdAt: string;
+  updatedAt: string;
+  distanceKm?: number;
 }
 
 export interface Reservation {
@@ -69,6 +110,7 @@ export interface Reservation {
   equipmentId: string;
   timeSlot: string;
   date: string;
+  memberId: string;
 }
 
 export interface ProgressData {

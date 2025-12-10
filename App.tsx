@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Onboarding } from './components/Onboarding';
 import { generateFitnessPlan } from './services/geminiService';
 import type { UserProfile, FitnessPlan } from './types';
@@ -9,6 +9,9 @@ import { MyPageScreen } from './components/screens/MyPageScreen';
 import { BottomNav } from './components/BottomNav';
 import { Chatbot } from './components/Chatbot';
 import { ChatBubbleIcon } from './components/icons';
+import { AuthScreen } from './components/auth/AuthScreen';
+import { OwnerDashboard } from './components/owner/OwnerDashboard';
+import { useAuth } from './context/AuthContext';
 
 type AppState = 'onboarding' | 'loading' | 'dashboard' | 'error';
 export type Tab = 'home' | 'reservations' | 'log' | 'mypage';
@@ -37,14 +40,26 @@ const ErrorDisplay: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
 
 
 function App() {
+  const { currentUser, logout, updateMemberProfile } = useAuth();
   const [appState, setAppState] = useState<AppState>('onboarding');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [fitnessPlan, setFitnessPlan] = useState<FitnessPlan | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'member') {
+      setUserProfile(null);
+      setFitnessPlan(null);
+      setActiveTab('home');
+      setAppState('onboarding');
+      setIsChatOpen(false);
+    }
+  }, [currentUser]);
+
   const handleOnboardingComplete = useCallback(async (profile: UserProfile) => {
     setUserProfile(profile);
+    updateMemberProfile(profile);
     setAppState('loading');
     try {
       const plan = await generateFitnessPlan(profile);
@@ -54,12 +69,20 @@ function App() {
       console.error(error);
       setAppState('error');
     }
-  }, []);
+  }, [updateMemberProfile]);
   
   const handleRetry = () => {
       setAppState('onboarding');
       setUserProfile(null);
       setFitnessPlan(null);
+  }
+
+  if (!currentUser) {
+    return <AuthScreen />;
+  }
+
+  if (currentUser.role === 'owner') {
+    return <OwnerDashboard />;
   }
 
   const renderContent = () => {
@@ -76,7 +99,14 @@ function App() {
                 {activeTab === 'home' && <HomeScreen plan={fitnessPlan} user={userProfile} />}
                 {activeTab === 'reservations' && <ReservationScreen />}
                 {activeTab === 'log' && <LogScreen />}
-                {activeTab === 'mypage' && <MyPageScreen user={userProfile} />}
+                {activeTab === 'mypage' && (
+                  <MyPageScreen
+                    user={userProfile}
+                    accountName={currentUser?.name ?? ''}
+                    email={currentUser?.email ?? ''}
+                    onLogout={logout}
+                  />
+                )}
               </main>
               <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
@@ -94,18 +124,18 @@ function App() {
   return (
     <div className="min-h-screen transition-colors duration-300">
       {renderContent()}
-       {appState === 'dashboard' && (
-            <>
-              <button
-                onClick={() => setIsChatOpen(true)}
-                className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-30 w-16 h-16 bg-cyan-600 rounded-full text-white flex items-center justify-center shadow-lg hover:bg-cyan-500 transition-transform transform hover:scale-110"
-                aria-label="Open AI Chat"
-              >
-                <ChatBubbleIcon className="w-8 h-8" />
-              </button>
-              {isChatOpen && <Chatbot onClose={() => setIsChatOpen(false)} />}
-            </>
-        )}
+      {appState === 'dashboard' && (
+        <>
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-30 w-16 h-16 bg-cyan-600 rounded-full text-white flex items-center justify-center shadow-lg hover:bg-cyan-500 transition-transform transform hover:scale-110"
+            aria-label="Open AI Chat"
+          >
+            <ChatBubbleIcon className="w-8 h-8" />
+          </button>
+          {isChatOpen && <Chatbot onClose={() => setIsChatOpen(false)} />}
+        </>
+      )}
     </div>
   );
 }

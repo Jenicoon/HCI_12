@@ -5,9 +5,12 @@ import { SunIcon, MoonIcon } from '../icons';
 
 interface MyPageScreenProps {
   user: UserProfile;
+  accountName: string;
+  email: string;
+  onLogout: () => void;
 }
 
-export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user }) => {
+export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, email, onLogout }) => {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -20,8 +23,16 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user }) => {
         
         <div className="space-y-8">
             <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10">
-                <h3 className="text-xl font-bold mb-4 text-cyan-600 dark:text-cyan-400">Profile Information</h3>
+              <h3 className="text-xl font-bold mb-4 text-cyan-600 dark:text-cyan-400">Profile Information</h3>
                 <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">Account Name:</span>
+                  <span className="font-semibold">{accountName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">Email:</span>
+                  <span className="font-semibold">{email}</span>
+                </div>
                     <div className="flex justify-between">
                         <span className="text-slate-500 dark:text-slate-400">Goal:</span>
                         <span className="font-semibold">{user.goal === 'weightLoss' ? 'Weight Loss' : user.goal === 'muscleGain' ? 'Muscle Gain' : 'Rehab/Mobility'}</span>
@@ -57,7 +68,12 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user }) => {
                     <button className="w-full text-left p-3 bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg transition">Edit Profile</button>
                     <button className="w-full text-left p-3 bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg transition">Notification Settings</button>
                     <button className="w-full text-left p-3 bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg transition">Terms of Service</button>
-                    <button className="w-full text-left p-3 text-red-500 bg-gray-50 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-slate-600 rounded-lg transition">Log Out</button>
+                    <button
+                      onClick={onLogout}
+                      className="w-full text-left p-3 text-red-500 bg-gray-50 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-slate-600 rounded-lg transition"
+                    >
+                      Log Out
+                    </button>
                 </div>
             </div>
 
