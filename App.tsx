@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Onboarding } from './components/Onboarding';
-import { generateFitnessPlan } from './services/geminiService';
+import { generateFitnessPlan, generateQuickPlan } from './services/geminiService';
 import type { UserProfile, FitnessPlan } from './types';
 import { HomeScreen } from './components/screens/HomeScreen';
 import { ReservationScreen } from './components/screens/ReservationScreen';
@@ -40,16 +40,29 @@ function App() {
   const [appState, setAppState] = useState<AppState>('onboarding');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [fitnessPlan, setFitnessPlan] = useState<FitnessPlan | null>(null);
+  const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleOnboardingComplete = useCallback(async (profile: UserProfile) => {
     setUserProfile(profile);
-    setAppState('loading');
+    // Immediately show a quick generated plan to reduce perceived wait time
     try {
-      const plan = await generateFitnessPlan(profile);
-      setFitnessPlan(plan);
+      const quick = generateQuickPlan(profile);
+      setFitnessPlan(quick);
       setAppState('dashboard');
+      setIsUpdatingPlan(true);
+      // Generate the refined plan in the background and swap when ready
+      generateFitnessPlan(profile)
+        .then(plan => {
+          setFitnessPlan(plan);
+        })
+        .catch(err => {
+          console.error('Background plan generation failed', err);
+          setErrorMessage(err instanceof Error ? err.message : String(err));
+        })
+        .finally(() => setIsUpdatingPlan(false));
     } catch (error) {
       console.error(error);
       setAppState('error');
@@ -60,6 +73,7 @@ function App() {
       setAppState('onboarding');
       setUserProfile(null);
       setFitnessPlan(null);
+      setErrorMessage(null);
   }
 
   const renderContent = () => {
@@ -94,6 +108,11 @@ function App() {
   return (
     <div className="min-h-screen transition-colors duration-300">
       {renderContent()}
+      {appState === 'dashboard' && isUpdatingPlan && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-40 bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100 px-4 py-2 rounded shadow">
+          Updating plan with personalized suggestions...
+        </div>
+      )}
        {appState === 'dashboard' && (
             <>
               <button

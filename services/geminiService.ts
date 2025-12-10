@@ -3,13 +3,18 @@
 import { GoogleGenAI, Type, Chat } from "@google/genai";
 import type { UserProfile, FitnessPlan } from '../types';
 
-const API_KEY = process.env.API_KEY;
+// Prefer Vite env var `VITE_API_KEY`. In the browser `process.env` is not available,
+// and exposing a secret in frontend is unsafe. For quick dev convenience we
+// provide a mock fallback when the key is not present so the app doesn't crash
+// on module load. Long-term: move calls to a secure server-side endpoint.
+const API_KEY = (import.meta as any).env?.VITE_API_KEY as string | undefined;
 
-if (!API_KEY) {
-  throw new Error("API_KEY environment variable is not set");
+let ai: InstanceType<typeof GoogleGenAI> | null = null;
+let chat: Chat | null = null;
+
+if (API_KEY) {
+  ai = new GoogleGenAI({ apiKey: API_KEY });
 }
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 const fitnessPlanSchema = {
   type: Type.OBJECT,
@@ -139,6 +144,37 @@ export const generateFitnessPlan = async (userProfile: UserProfile): Promise<Fit
     4.  **Format:** Return the response in the specified JSON format.
   `;
 
+  // If the API client isn't available (no API key), return a lightweight mock
+  // plan for local development instead of throwing at module import time.
+  if (!ai) {
+    console.warn('VITE_API_KEY not set — returning mock fitness plan for dev');
+    const mockPlan: FitnessPlan = {
+      workoutPlan: [
+        {
+          day: 'Monday',
+          focus: 'Full Body',
+          exercises: [
+            { name: 'Bodyweight Squat', sets: 3, reps: '12', rest: '60s', description: 'Standard squat focusing on depth and form.' },
+            { name: 'Push-ups', sets: 3, reps: '8-12', rest: '60s', description: 'Keep a straight line from head to heels.' }
+          ]
+        }
+      ],
+      dietPlan: [
+        {
+          day: 'Monday',
+          meals: {
+            breakfast: { name: 'Oatmeal', calories: 350, description: 'Oats with banana and milk', recipe: 'Mix oats with milk and top with banana.' },
+            lunch: { name: 'Chicken Salad', calories: 500, description: 'Grilled chicken with greens', recipe: 'Grill chicken and toss with salad.' },
+            dinner: { name: 'Rice & Veg', calories: 600, description: 'Rice with mixed vegetables', recipe: 'Stir-fry veggies and serve with rice.' },
+            snacks: { name: 'Yogurt', calories: 150, description: 'Plain yogurt with honey', recipe: 'Serve yogurt with a drizzle of honey.' }
+          },
+          dailyTotal: { calories: 1600, protein: '110g', carbs: '180g', fat: '50g' }
+        }
+      ]
+    } as unknown as FitnessPlan;
+    return new Promise(resolve => setTimeout(() => resolve(mockPlan), 300));
+  }
+
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -158,27 +194,89 @@ export const generateFitnessPlan = async (userProfile: UserProfile): Promise<Fit
   }
 };
 
-let chat: Chat | null = null;
+// Lightweight, deterministic quick plan generator for immediate UX feedback.
+// This returns a simple 7-day plan synchronously (fast) so the UI can show
+// something while a refined plan is generated in the background.
+export const generateQuickPlan = (userProfile: UserProfile): FitnessPlan => {
+  const goal = userProfile.goal || 'weightLoss';
+  const pref = userProfile.workoutPreference || 'home';
+
+  const baseCalories = goal === 'muscleGain' ? 2500 : goal === 'rehab' ? 1800 : 1600;
+
+  const exercisesFor = (focus: string) => {
+    if (pref === 'gym') {
+      if (focus === 'Cardio') return [
+        { name: 'Treadmill Jog', sets: 1, reps: '20 min', rest: '—', description: 'Light to moderate jog.' }
+      ];
+      return [
+        { name: 'Barbell Squat', sets: 3, reps: '8-10', rest: '90s', description: 'Keep chest up, drive through heels.' },
+        { name: 'Dumbbell Bench Press', sets: 3, reps: '8-12', rest: '90s', description: 'Control the weight on the way down.' }
+      ];
+    }
+    // home / bodyweight
+    if (focus === 'Cardio') return [
+      { name: 'Jumping Jacks', sets: 3, reps: '60', rest: '30s', description: 'Moderate pace to raise heart rate.' }
+    ];
+    return [
+      { name: 'Bodyweight Squat', sets: 3, reps: '12', rest: '60s', description: 'Sit back into your hips.' },
+      { name: 'Push-ups', sets: 3, reps: '8-12', rest: '60s', description: 'Keep a straight plank position.' }
+    ];
+  };
+
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+  const workoutPlan = days.map((day, i) => {
+    const focus = i % 3 === 0 ? 'Full Body' : i % 3 === 1 ? 'Upper Body' : 'Cardio';
+    return {
+      day,
+      focus,
+      exercises: exercisesFor(focus),
+    };
+  });
+
+  const dietPlan = days.map(day => ({
+    day,
+    meals: {
+      breakfast: { name: 'Oatmeal & Fruit', calories: Math.round(baseCalories * 0.22), description: 'Quick oats with fruit', recipe: 'Mix oats with milk and add fruit.' },
+      lunch: { name: 'Lean Protein Bowl', calories: Math.round(baseCalories * 0.34), description: 'Protein with veggies and grain', recipe: 'Combine grilled protein with vegetables and rice.' },
+      dinner: { name: 'Simple Stir-fry', calories: Math.round(baseCalories * 0.38), description: 'Veggies and protein', recipe: 'Stir-fry vegetables and serve with protein.' },
+      snacks: { name: 'Greek Yogurt', calories: Math.round(baseCalories * 0.06), description: 'Yogurt or a small snack', recipe: 'Serve plain yogurt with a drizzle of honey.' }
+    },
+    dailyTotal: { calories: baseCalories, protein: '100g', carbs: '200g', fat: '60g' }
+  }));
+
+  return {
+    workoutPlan,
+    dietPlan,
+  } as unknown as FitnessPlan;
+};
 
 export const getChatSession = () => {
-    if (!chat) {
-        chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: {
-                systemInstruction: "You are a friendly and encouraging AI fitness coach. You provide helpful advice on workouts, nutrition, and healthy habits. Keep your answers concise and easy to understand."
-            },
-        });
-    }
-    return chat;
+  if (!ai) {
+    return null;
+  }
+  if (!chat) {
+    chat = ai.chats.create({
+      model: 'gemini-2.5-flash',
+      config: {
+        systemInstruction: "You are a friendly and encouraging AI fitness coach. You provide helpful advice on workouts, nutrition, and healthy habits. Keep your answers concise and easy to understand."
+      },
+    });
+  }
+  return chat;
 }
 
 export const sendMessageToChat = async (message: string): Promise<string> => {
-    const chatSession = getChatSession();
-    try {
-        const response = await chatSession.sendMessage({ message });
-        return response.text;
-    } catch (error) {
-        console.error("Error sending message to chat:", error);
-        return "I'm sorry, I'm having trouble connecting right now. Please try again later.";
-    }
+  const chatSession = getChatSession();
+  if (!chatSession) {
+    // Fallback mock response for dev when API key is not present
+    return Promise.resolve("Hi — this is a local mock response. Set VITE_API_KEY to use the real chat.");
+  }
+  try {
+    const response = await chatSession.sendMessage({ message });
+    return response.text;
+  } catch (error) {
+    console.error("Error sending message to chat:", error);
+    return "I'm sorry, I'm having trouble connecting right now. Please try again later.";
+  }
 }

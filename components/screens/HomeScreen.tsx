@@ -15,7 +15,13 @@ const TodaysWorkout: React.FC<{ workout: FitnessPlan['workoutPlan'][0] }> = ({ w
         {workout.exercises.map((ex: Exercise, index: number) => (
           <div key={index} className="bg-gray-50 dark:bg-slate-700 p-3 rounded-lg">
             <div className="flex justify-between items-center">
-              <h4 className="font-semibold text-slate-800 dark:text-white">{ex.name}</h4>
+              <button
+                onClick={() => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' exercise tutorial')}`, '_blank')}
+                className="text-left font-semibold text-slate-800 dark:text-white hover:underline"
+                aria-label={`Open YouTube tutorial for ${ex.name}`}
+              >
+                {ex.name}
+              </button>
               <span className="text-sm font-mono bg-white dark:bg-slate-800 px-2 py-1 rounded text-cyan-600 dark:text-cyan-400 ring-1 ring-gray-200 dark:ring-slate-600">{ex.sets}x{ex.reps}</span>
             </div>
           </div>
