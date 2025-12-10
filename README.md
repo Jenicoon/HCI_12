@@ -15,6 +15,11 @@ View your app in AI Studio: https://ai.studio/apps/drive/1lZsOv68S9iBfvVRmfrkg9v
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Copy `.env` and set `VITE_API_KEY` to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+### Local Roles
+
+- **Gym Owners**: Sign up with the owner role to publish gyms (location, photos, amenities, equipment, operating hours). Listings are stored in browser storage so you can return and edit later.
+- **Members**: Sign up with the member role to generate AI fitness plans, browse owner-published gyms on the map, and reserve individual pieces of equipment.

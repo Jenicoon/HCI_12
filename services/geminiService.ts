@@ -1,15 +1,12 @@
 
-
 import { GoogleGenAI, Type, Chat } from "@google/genai";
 import type { UserProfile, FitnessPlan } from '../types';
 
-const API_KEY = process.env.API_KEY;
+// Vite exposes env vars via import.meta.env (must be prefixed with VITE_)
+const API_KEY: string | undefined = (import.meta as any).env?.VITE_API_KEY;
 
-if (!API_KEY) {
-  throw new Error("API_KEY environment variable is not set");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+// Initialize client only if key exists; avoid throwing at module load time
+const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
 const fitnessPlanSchema = {
   type: Type.OBJECT,
@@ -113,6 +110,10 @@ const fitnessPlanSchema = {
 };
 
 export const generateFitnessPlan = async (userProfile: UserProfile): Promise<FitnessPlan> => {
+  // Return fallback plan if API key is missing
+  if (!API_KEY || !ai) {
+    return getFallbackPlan();
+  }
   const goalMap = {
     weightLoss: 'Weight Loss',
     muscleGain: 'Muscle Gain',
@@ -154,13 +155,17 @@ export const generateFitnessPlan = async (userProfile: UserProfile): Promise<Fit
     return plan;
   } catch (error) {
     console.error("Error generating fitness plan:", error);
-    throw new Error("Failed to generate a fitness plan. Please try again.");
+    // Return fallback instead of throwing
+    return getFallbackPlan();
   }
 };
 
 let chat: Chat | null = null;
 
 export const getChatSession = () => {
+    if (!API_KEY || !ai) {
+        return null;
+    }
     if (!chat) {
         chat = ai.chats.create({
             model: 'gemini-2.5-flash',
@@ -174,6 +179,9 @@ export const getChatSession = () => {
 
 export const sendMessageToChat = async (message: string): Promise<string> => {
     const chatSession = getChatSession();
+    if (!chatSession) {
+        return "Chat is not available. Please set up your API key.";
+    }
     try {
         const response = await chatSession.sendMessage({ message });
         return response.text;
@@ -181,4 +189,30 @@ export const sendMessageToChat = async (message: string): Promise<string> => {
         console.error("Error sending message to chat:", error);
         return "I'm sorry, I'm having trouble connecting right now. Please try again later.";
     }
+}
+
+// Fallback plan when API is unavailable
+function getFallbackPlan(): FitnessPlan {
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  return {
+    workoutPlan: days.map((day, i) => ({
+      day,
+      focus: i % 2 === 0 ? 'Full Body' : 'Cardio & Rest',
+      exercises: [
+        { name: 'Bodyweight Squats', sets: 3, reps: '12-15', rest: '60s', description: 'Keep back straight, lower until thighs parallel.' },
+        { name: 'Push-ups', sets: 3, reps: '10-12', rest: '60s', description: 'Hands shoulder-width, lower chest to floor.' },
+        { name: 'Plank', sets: 3, reps: '30s', rest: '45s', description: 'Keep body straight, engage core.' }
+      ]
+    })),
+    dietPlan: days.map(day => ({
+      day,
+      meals: {
+        breakfast: { name: 'Oatmeal & Fruit', calories: 350, description: 'Oats with banana and berries', recipe: 'Cook oats, top with sliced fruit.' },
+        lunch: { name: 'Chicken Salad', calories: 500, description: 'Grilled chicken with greens', recipe: 'Grill chicken, toss with mixed greens.' },
+        dinner: { name: 'Salmon & Vegetables', calories: 600, description: 'Baked salmon with steamed veggies', recipe: 'Bake salmon, steam broccoli and carrots.' },
+        snacks: { name: 'Greek Yogurt', calories: 150, description: 'Plain yogurt with honey', recipe: 'Add honey to yogurt.' }
+      },
+      dailyTotal: { calories: 1600, protein: '120g', carbs: '150g', fat: '50g' }
+    }))
+  } as FitnessPlan;
 }
