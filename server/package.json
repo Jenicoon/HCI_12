@@ -1,0 +1,23 @@
+{
+  "name": "ai-fitness-coach-server",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.mjs",
+  "scripts": {
+    "dev": "node --watch src/index.mjs",
+    "start": "node src/index.mjs"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.79",
+    "@google/generative-ai": "^0.6.0",
+    "@langchain/google-genai": "^0.2.3",
+    "@langchain/langgraph": "^0.4.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.5.0",
+    "node-fetch": "^3.3.2",
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.23.2"
+  }
+}

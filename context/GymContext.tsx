@@ -1,5 +1,15 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  onSnapshot,
+  updateDoc,
+} from 'firebase/firestore';
 import type { Equipment, Gym, OperatingHours } from '../types';
+import { firestore } from '../services/firebase';
 
 export interface GymPayload {
   name: string;
@@ -15,25 +25,17 @@ export interface GymPayload {
 
 interface GymContextValue {
   gyms: Gym[];
-  createGym: (ownerId: string, payload: GymPayload) => Gym;
-  updateGym: (ownerId: string, gymId: string, payload: Partial<GymPayload>) => Gym | null;
-  deleteGym: (ownerId: string, gymId: string) => void;
+  loading: boolean;
+  createGym: (ownerId: string, payload: GymPayload) => Promise<Gym>;
+  updateGym: (ownerId: string, gymId: string, payload: Partial<GymPayload>) => Promise<void>;
+  deleteGym: (ownerId: string, gymId: string) => Promise<void>;
   getGymsByOwner: (ownerId: string) => Gym[];
 }
 
 const GymContext = createContext<GymContextValue | undefined>(undefined);
-
-const STORAGE_KEY = 'fitness-gym-state';
 const DEFAULT_HOURS: OperatingHours = {
   weekdays: '06:00 - 23:00',
   weekends: '08:00 - 22:00',
-};
-
-const createId = () => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `gym-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
 };
 
 const normalizeEquipment = (raw: any): Equipment | null => {
@@ -95,51 +97,40 @@ const normalizeGym = (raw: any): Gym | null => {
     updatedAt,
   };
 };
-
-const loadInitialGyms = (): Gym[] => {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      return [];
-    }
-    const parsed = JSON.parse(stored);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed
-      .map(normalizeGym)
-      .filter((gym: Gym | null): gym is Gym => Boolean(gym));
-  } catch (error) {
-    console.warn('Failed to parse gyms from storage:', error);
-    return [];
-  }
-};
+const gymsCollection = collection(firestore, 'gyms');
 
 export const GymProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [gyms, setGyms] = useState<Gym[]>(loadInitialGyms);
+  const [gyms, setGyms] = useState<Gym[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(gyms));
-    } catch (error) {
-      console.warn('Failed to persist gyms:', error);
-    }
-  }, [gyms]);
+    const unsubscribe = onSnapshot(gymsCollection, snapshot => {
+      const mapped = snapshot.docs
+        .map(docSnapshot => {
+          const data = docSnapshot.data();
+          return normalizeGym({ ...data, id: docSnapshot.id });
+        })
+        .filter((gym): gym is Gym => Boolean(gym));
+      setGyms(mapped);
+      setLoading(false);
+    }, error => {
+      console.error('Failed to subscribe to gyms collection:', error);
+      setGyms([]);
+      setLoading(false);
+    });
 
-  const createGym = useCallback((ownerId: string, payload: GymPayload): Gym => {
+    return unsubscribe;
+  }, []);
+
+  const createGym = useCallback(async (ownerId: string, payload: GymPayload) => {
     const timestamp = new Date().toISOString();
-    const newGym: Gym = {
-      id: createId(),
+    const document = {
       ownerId,
       name: payload.name.trim(),
       address: payload.address.trim(),
       latitude: payload.latitude,
       longitude: payload.longitude,
-      description: payload.description?.trim(),
+      description: payload.description?.trim() ?? null,
       photos: payload.photos,
       amenities: payload.amenities,
       equipment: payload.equipment,
@@ -147,51 +138,64 @@ export const GymProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: timestamp,
       updatedAt: timestamp,
     };
-    setGyms(prev => [...prev, newGym]);
-    return newGym;
+
+    const docRef = await addDoc(gymsCollection, document);
+    const gym: Gym = {
+      id: docRef.id,
+      ownerId,
+      name: document.name,
+      address: document.address,
+      latitude: document.latitude,
+      longitude: document.longitude,
+      description: payload.description?.trim(),
+      photos: document.photos,
+      amenities: document.amenities,
+      equipment: document.equipment,
+      operatingHours: document.operatingHours,
+      createdAt: document.createdAt,
+      updatedAt: document.updatedAt,
+    };
+    return gym;
   }, []);
 
-  const updateGym = useCallback((ownerId: string, gymId: string, payload: Partial<GymPayload>): Gym | null => {
-    let updatedGym: Gym | null = null;
-    setGyms(prev =>
-      prev.map(gym => {
-        if (gym.id !== gymId || gym.ownerId !== ownerId) {
-          return gym;
-        }
-        updatedGym = {
-          ...gym,
-          ...payload,
-          name: payload.name !== undefined ? payload.name.trim() : gym.name,
-          address: payload.address !== undefined ? payload.address.trim() : gym.address,
-          description: payload.description !== undefined ? payload.description.trim() : gym.description,
-          updatedAt: new Date().toISOString(),
-        } as Gym;
-        if (payload.latitude !== undefined) {
-          updatedGym.latitude = payload.latitude;
-        }
-        if (payload.longitude !== undefined) {
-          updatedGym.longitude = payload.longitude;
-        }
-        if (payload.photos !== undefined) {
-          updatedGym.photos = payload.photos;
-        }
-        if (payload.amenities !== undefined) {
-          updatedGym.amenities = payload.amenities;
-        }
-        if (payload.equipment !== undefined) {
-          updatedGym.equipment = payload.equipment;
-        }
-        if (payload.operatingHours !== undefined) {
-          updatedGym.operatingHours = payload.operatingHours;
-        }
-        return updatedGym;
-      })
-    );
-    return updatedGym;
+  const updateGym = useCallback(async (ownerId: string, gymId: string, payload: Partial<GymPayload>) => {
+    const gymRef = doc(firestore, 'gyms', gymId);
+    const snapshot = await getDoc(gymRef);
+    if (!snapshot.exists()) {
+      throw new Error('해당 헬스장을 찾을 수 없습니다.');
+    }
+    const data = snapshot.data();
+    if (data.ownerId !== ownerId) {
+      throw new Error('이 헬스장을 수정할 권한이 없습니다.');
+    }
+
+    const updatePayload: Record<string, unknown> = {
+      updatedAt: new Date().toISOString(),
+    };
+    if (payload.name !== undefined) updatePayload.name = payload.name.trim();
+    if (payload.address !== undefined) updatePayload.address = payload.address.trim();
+    if (payload.description !== undefined) updatePayload.description = payload.description?.trim() ?? null;
+    if (payload.latitude !== undefined) updatePayload.latitude = payload.latitude;
+    if (payload.longitude !== undefined) updatePayload.longitude = payload.longitude;
+    if (payload.photos !== undefined) updatePayload.photos = payload.photos;
+    if (payload.amenities !== undefined) updatePayload.amenities = payload.amenities;
+    if (payload.equipment !== undefined) updatePayload.equipment = payload.equipment;
+    if (payload.operatingHours !== undefined) updatePayload.operatingHours = payload.operatingHours;
+
+    await updateDoc(gymRef, updatePayload);
   }, []);
 
-  const deleteGym = useCallback((ownerId: string, gymId: string) => {
-    setGyms(prev => prev.filter(gym => !(gym.id === gymId && gym.ownerId === ownerId)));
+  const deleteGym = useCallback(async (ownerId: string, gymId: string) => {
+    const gymRef = doc(firestore, 'gyms', gymId);
+    const snapshot = await getDoc(gymRef);
+    if (!snapshot.exists()) {
+      return;
+    }
+    const data = snapshot.data();
+    if (data.ownerId !== ownerId) {
+      throw new Error('이 헬스장을 삭제할 권한이 없습니다.');
+    }
+    await deleteDoc(gymRef);
   }, []);
 
   const getGymsByOwner = useCallback(
@@ -200,8 +204,8 @@ export const GymProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   const value = useMemo<GymContextValue>(
-    () => ({ gyms, createGym, updateGym, deleteGym, getGymsByOwner }),
-    [gyms, createGym, updateGym, deleteGym, getGymsByOwner]
+    () => ({ gyms, loading, createGym, updateGym, deleteGym, getGymsByOwner }),
+    [gyms, loading, createGym, updateGym, deleteGym, getGymsByOwner]
   );
 
   return <GymContext.Provider value={value}>{children}</GymContext.Provider>;

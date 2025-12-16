@@ -1,3 +1,5 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export type UserRole = 'owner' | 'member';
 
 export interface UserProfile {
@@ -15,7 +17,6 @@ export interface AccountBase {
   role: UserRole;
   name: string;
   email: string;
-  password: string;
   createdAt: string;
 }
 
@@ -109,8 +110,9 @@ export interface Reservation {
   gymId: string;
   equipmentId: string;
   timeSlot: string;
-  date: string;
+  date: Timestamp;
   memberId: string;
+  createdAt: Timestamp;
 }
 
 export interface ProgressData {
@@ -118,6 +120,25 @@ export interface ProgressData {
     weight: number;
     bodyFat: number;
     muscleMass: number;
+}
+
+export interface ProgressEntry {
+  id: string;
+  label: string;
+  weight: number;
+  bodyFat?: number | null;
+  muscleMass?: number | null;
+  recordedAt: string;
+}
+
+export interface WorkoutLogEntry {
+  id: string;
+  weekLabel: string;
+  day: string;
+  focus: string;
+  completed: boolean;
+  completedAt?: string | null;
+  createdAt: string;
 }
 
 export interface ChatMessage {

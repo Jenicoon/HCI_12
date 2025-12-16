@@ -1,195 +1,72 @@
 
-import { GoogleGenAI, Type, Chat } from "@google/genai";
-import type { UserProfile, FitnessPlan } from '../types';
+import type { UserProfile, FitnessPlan, ChatMessage } from '../types';
 
-// Vite exposes env vars via import.meta.env (must be prefixed with VITE_)
-const API_KEY: string | undefined = (import.meta as any).env?.VITE_API_KEY;
+const API_BASE = (import.meta as any).env?.VITE_COACH_API_URL ?? 'http://localhost:4000';
 
-// Initialize client only if key exists; avoid throwing at module load time
-const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
-
-const fitnessPlanSchema = {
-  type: Type.OBJECT,
-  properties: {
-    workoutPlan: {
-      type: Type.ARRAY,
-      description: "A 7-day workout plan.",
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          day: { type: Type.STRING, description: "Day of the week (e.g., Monday)." },
-          focus: { type: Type.STRING, description: "Main muscle group or workout type for the day (e.g., Chest & Triceps, Cardio, Rest)." },
-          exercises: {
-            type: Type.ARRAY,
-            description: "List of exercises for the day.",
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                name: { type: Type.STRING, description: "Name of the exercise." },
-                sets: { type: Type.INTEGER, description: "Number of sets." },
-                reps: { type: Type.STRING, description: "Number of repetitions per set (e.g., '8-12 reps' or '30 seconds')." },
-                rest: { type: Type.STRING, description: "Rest time between sets (e.g., '60 seconds')." },
-                description: { type: Type.STRING, description: "A brief, clear description of how to perform the exercise correctly." }
-              },
-              required: ["name", "sets", "reps", "rest", "description"],
-            },
-          },
-        },
-        required: ["day", "focus", "exercises"],
-      },
-    },
-    dietPlan: {
-      type: Type.ARRAY,
-      description: "A 7-day diet plan.",
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          day: { type: Type.STRING, description: "Day of the week (e.g., Monday)." },
-          meals: {
-            type: Type.OBJECT,
-            properties: {
-              breakfast: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  calories: { type: Type.INTEGER },
-                  description: { type: Type.STRING },
-                  recipe: { type: Type.STRING, description: "Simple recipe instructions." }
-                },
-                required: ["name", "calories", "description", "recipe"],
-              },
-              lunch: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  calories: { type: Type.INTEGER },
-                  description: { type: Type.STRING },
-                  recipe: { type: Type.STRING, description: "Simple recipe instructions." }
-                },
-                required: ["name", "calories", "description", "recipe"],
-              },
-              dinner: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  calories: { type: Type.INTEGER },
-                  description: { type: Type.STRING },
-                  recipe: { type: Type.STRING, description: "Simple recipe instructions." }
-                },
-                 required: ["name", "calories", "description", "recipe"],
-              },
-              snacks: {
-                type: Type.OBJECT,
-                 properties: {
-                  name: { type: Type.STRING },
-                  calories: { type: Type.INTEGER },
-                  description: { type: Type.STRING },
-                   recipe: { type: Type.STRING, description: "Simple recipe instructions." }
-                },
-                 required: ["name", "calories", "description", "recipe"],
-              }
-            },
-            required: ["breakfast", "lunch", "dinner"],
-          },
-          dailyTotal: {
-            type: Type.OBJECT,
-            properties: {
-              calories: { type: Type.INTEGER },
-              protein: { type: Type.STRING, description: "e.g., 150g" },
-              carbs: { type: Type.STRING, description: "e.g., 200g" },
-              fat: { type: Type.STRING, description: "e.g., 60g" },
-            },
-            required: ["calories", "protein", "carbs", "fat"],
-          },
-        },
-        required: ["day", "meals", "dailyTotal"],
-      },
-    },
-  },
-  required: ["workoutPlan", "dietPlan"],
-};
-
-export const generateFitnessPlan = async (userProfile: UserProfile): Promise<FitnessPlan> => {
-  // Return fallback plan if API key is missing
-  if (!API_KEY || !ai) {
-    return getFallbackPlan();
-  }
-  const goalMap = {
-    weightLoss: 'Weight Loss',
-    muscleGain: 'Muscle Gain',
-    rehab: 'Rehabilitation and mobility improvement'
-  };
-
-  const prompt = `
-    Create a highly personalized 7-day fitness and diet plan for a user with the following profile. 
-    The plan should be safe, effective, and tailored to their specific needs.
-
-    User Profile:
-    - Primary Goal: ${goalMap[userProfile.goal as keyof typeof goalMap]}
-    - Height: ${userProfile.height} cm
-    - Weight: ${userProfile.weight} kg
-    - Body Fat Percentage: ${userProfile.bodyFat ? `${userProfile.bodyFat}%` : 'Not provided'}
-    - Health Conditions: ${userProfile.healthConditions || 'None specified'}
-    - Workout Location Preference: ${userProfile.workoutPreference === 'home' ? 'At home' : 'At the gym'}
-    - Available Equipment: ${userProfile.availableEquipment || 'Basic bodyweight exercises'}
-
-    Instructions:
-    1.  **Workout Plan:** Design a balanced 7-day schedule, including rest days. For each workout day, provide a list of exercises with sets, reps, and rest times. Ensure the exercises are appropriate for the user's location and available equipment. For rehab goals, focus on low-impact and mobility exercises.
-    2.  **Diet Plan:** Create a 7-day meal plan with breakfast, lunch, and dinner. Include estimated calories for each meal and a daily total for calories and macros (protein, carbs, fat). The diet should align with the user's primary goal (e.g., calorie deficit for weight loss, surplus for muscle gain). Provide simple recipes or meal ideas.
-    3.  **Safety:** If the user mentioned health conditions, adjust the plan accordingly (e.g., low-impact exercises for joint issues). Add a general disclaimer about consulting a doctor.
-    4.  **Format:** Return the response in the specified JSON format.
-  `;
-
+export const generateFitnessPlan = async (memberId: string, userProfile: UserProfile): Promise<FitnessPlan> => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: fitnessPlanSchema,
+    const response = await fetch(`${API_BASE}/api/coach/generate-plan`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ memberId, profile: userProfile }),
     });
 
-    const jsonText = response.text.trim();
-    const plan = JSON.parse(jsonText) as FitnessPlan;
-    return plan;
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || 'Failed to generate plan');
+    }
+
+    const payload = await response.json();
+    if (payload?.plan) {
+      return payload.plan as FitnessPlan;
+    }
+    throw new Error('Invalid plan payload received from AI coach server');
   } catch (error) {
-    console.error("Error generating fitness plan:", error);
-    // Return fallback instead of throwing
+    console.error('generateFitnessPlan fallback due to error:', error);
     return getFallbackPlan();
   }
 };
 
-let chat: Chat | null = null;
-
-export const getChatSession = () => {
-    if (!API_KEY || !ai) {
-        return null;
-    }
-    if (!chat) {
-        chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: {
-                systemInstruction: "You are a friendly and encouraging AI fitness coach. You provide helpful advice on workouts, nutrition, and healthy habits. Keep your answers concise and easy to understand."
-            },
-        });
-    }
-    return chat;
+interface SendChatPayload {
+  memberId?: string | null;
+  message: string;
+  history: ChatMessage[];
 }
 
-export const sendMessageToChat = async (message: string): Promise<string> => {
-    const chatSession = getChatSession();
-    if (!chatSession) {
-        return "Chat is not available. Please set up your API key.";
+export const sendMessageToChat = async ({ memberId, message, history }: SendChatPayload): Promise<string> => {
+  try {
+    const response = await fetch(`${API_BASE}/api/coach/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        memberId,
+        message,
+        history: history.map(item => ({
+          role: item.role === 'model' ? 'assistant' : 'user',
+          content: item.text,
+        })),
+      }),
+    });
+
+    if (!response.ok) {
+      const messageText = await response.text();
+      throw new Error(messageText || 'Failed to converse with AI coach');
     }
-    try {
-        const response = await chatSession.sendMessage({ message });
-        return response.text;
-    } catch (error) {
-        console.error("Error sending message to chat:", error);
-        return "I'm sorry, I'm having trouble connecting right now. Please try again later.";
+
+    const payload = await response.json();
+    if (payload?.reply) {
+      return payload.reply as string;
     }
-}
+    return '답변을 이해하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+  } catch (error) {
+    console.error('sendMessageToChat error:', error);
+    return 'AI 코치와 통신하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+  }
+};
 
 // Fallback plan when API is unavailable
 function getFallbackPlan(): FitnessPlan {
