@@ -46,7 +46,7 @@ export const sendMessageToChat = async ({ memberId, message, history }: SendChat
       },
       body: JSON.stringify({
         memberId,
-        message,
+        message: `Please answer in English only: ${message}`,
         history: history.map(item => ({
           role: item.role === 'model' ? 'assistant' : 'user',
           content: item.text,
