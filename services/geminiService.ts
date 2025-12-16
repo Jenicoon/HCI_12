@@ -1,11 +1,13 @@
 
 import type { UserProfile, FitnessPlan, ChatMessage } from '../types';
 
-const API_BASE = (import.meta as any).env?.VITE_COACH_API_URL ?? 'http://localhost:4000';
+const rawApiBase = ((import.meta as any).env?.VITE_COACH_API_URL as string | undefined)?.trim();
+const API_BASE = rawApiBase ? rawApiBase.replace(/\/$/, '') : '';
+const buildUrl = (path: string) => `${API_BASE}${path}`;
 
 export const generateFitnessPlan = async (memberId: string, userProfile: UserProfile): Promise<FitnessPlan> => {
   try {
-    const response = await fetch(`${API_BASE}/api/coach/generate-plan`, {
+    const response = await fetch(buildUrl('/api/coach/generate-plan'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -37,7 +39,7 @@ interface SendChatPayload {
 
 export const sendMessageToChat = async ({ memberId, message, history }: SendChatPayload): Promise<string> => {
   try {
-    const response = await fetch(`${API_BASE}/api/coach/chat`, {
+    const response = await fetch(buildUrl('/api/coach/chat'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
