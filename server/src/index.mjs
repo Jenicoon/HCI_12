@@ -9,7 +9,28 @@ import { fetchMemberProgressStats } from './lib/progressStats.mjs';
 const PORT = process.env.PORT || 4000;
 const app = express();
 
-app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',').map(origin => origin.trim()) ?? true }));
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ?.split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+console.log('[cors] allowed origins:', allowedOrigins?.length ? allowedOrigins : '*');
+
+app.use(
+  cors({
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin) {
+        return callback(null, true);
+      }
+      if (!allowedOrigins?.length || allowedOrigins.includes(requestOrigin)) {
+        return callback(null, true);
+      }
+      console.warn(`[cors] blocked origin: ${requestOrigin}`);
+      return callback(new Error('Not allowed by CORS'));
+    },
+  }),
+);
+app.options('*', cors());
 app.use(express.json({ limit: '2mb' }));
 
 app.get('/healthz', (_req, res) => {
