@@ -136,6 +136,7 @@ export interface WorkoutLogEntry {
   weekLabel: string;
   day: string;
   focus: string;
+  exerciseName?: string | null;
   completed: boolean;
   completedAt?: string | null;
   createdAt: string;

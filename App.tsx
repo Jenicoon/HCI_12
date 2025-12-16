@@ -12,7 +12,6 @@ import { ChatBubbleIcon } from './components/icons';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { OwnerDashboard } from './components/owner/OwnerDashboard';
 import { useAuth } from './context/AuthContext';
-import { useTheme } from './context/ThemeContext';
 import { getStoredPlanForMember } from './services/planService';
 
 type AppState = 'onboarding' | 'loading' | 'dashboard' | 'error';
@@ -46,7 +45,6 @@ const ErrorDisplay: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
 
 function App() {
   const { currentUser, loading, logout, updateMemberProfile } = useAuth();
-  const { theme } = useTheme();
   const [appState, setAppState] = useState<AppState>('onboarding');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [fitnessPlan, setFitnessPlan] = useState<FitnessPlan | null>(null);
@@ -195,7 +193,7 @@ function App() {
           return (
             <div className="flex flex-col h-screen">
               <main className="flex-1 overflow-y-auto pb-20 bg-gray-50 dark:bg-slate-900">
-                {activeTab === 'home' && <HomeScreen plan={fitnessPlan} user={userProfile} />}
+                {activeTab === 'home' && <HomeScreen plan={fitnessPlan} user={userProfile} memberId={memberId} />}
                 {activeTab === 'reservations' && <ReservationScreen />}
                 {activeTab === 'log' && <LogScreen />}
                 {activeTab === 'mypage' && (
@@ -222,22 +220,20 @@ function App() {
   };
 
   return (
-    <div className={theme === 'dark' ? 'dark' : ''}>
-      <div className="min-h-screen transition-colors duration-300 bg-gray-50 dark:bg-slate-900">
-        {renderContent()}
-        {appState === 'dashboard' && (
-          <>
-            <button
-              onClick={() => setIsChatOpen(true)}
-              className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-30 w-16 h-16 bg-cyan-600 rounded-full text-white flex items-center justify-center shadow-lg hover:bg-cyan-500 transition-transform transform hover:scale-110"
-              aria-label="Open AI Chat"
-            >
-              <ChatBubbleIcon className="w-8 h-8" />
-            </button>
-            {isChatOpen && <Chatbot onClose={() => setIsChatOpen(false)} memberId={memberId} />}
-          </>
-        )}
-      </div>
+    <div className="min-h-screen transition-colors duration-300">
+      {renderContent()}
+      {appState === 'dashboard' && (
+        <>
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-30 w-16 h-16 bg-cyan-600 rounded-full text-white flex items-center justify-center shadow-lg hover:bg-cyan-500 transition-transform transform hover:scale-110"
+            aria-label="Open AI Chat"
+          >
+            <ChatBubbleIcon className="w-8 h-8" />
+          </button>
+          {isChatOpen && <Chatbot onClose={() => setIsChatOpen(false)} memberId={memberId} />}
+        </>
+      )}
     </div>
   );
 }

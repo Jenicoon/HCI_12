@@ -16,6 +16,7 @@ type WorkoutLogDocument = {
   weekLabel: string;
   day: string;
   focus: string;
+  exerciseName?: string | null;
   completed: boolean;
   completedAt?: string | null;
   createdAt: string;
@@ -33,7 +34,9 @@ export interface WorkoutLogPayload {
   weekLabel: string;
   day: string;
   focus: string;
+  exerciseName?: string;
   completed?: boolean;
+  completedAt?: string | null;
   createdAt?: string;
 }
 
@@ -87,6 +90,7 @@ export const subscribeToWorkoutLogs = (
           weekLabel: data.weekLabel ?? 'Recent',
           day: data.day ?? 'Day',
           focus: data.focus ?? 'Workout',
+          exerciseName: data.exerciseName ?? null,
           completed: typeof data.completed === 'boolean' ? data.completed : false,
           completedAt: data.completedAt ?? null,
           createdAt: data.createdAt ?? new Date().toISOString(),
@@ -115,12 +119,15 @@ export const addProgressEntry = async (memberId: string, payload: ProgressEntryP
 
 export const addWorkoutLog = async (memberId: string, payload: WorkoutLogPayload): Promise<void> => {
   const createdAt = payload.createdAt ?? new Date().toISOString();
+  const completed = typeof payload.completed === 'boolean' ? payload.completed : false;
+  const resolvedCompletedAt = payload.completedAt ?? (completed ? new Date().toISOString() : null);
   await addDoc(workoutCollection(memberId), {
     weekLabel: payload.weekLabel.trim(),
     day: payload.day.trim(),
     focus: payload.focus.trim(),
-    completed: typeof payload.completed === 'boolean' ? payload.completed : false,
-    completedAt: null,
+    exerciseName: payload.exerciseName?.trim() ?? null,
+    completed,
+    completedAt: resolvedCompletedAt,
     createdAt,
   } satisfies WorkoutLogDocument);
 };

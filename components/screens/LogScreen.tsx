@@ -71,7 +71,10 @@ const WorkoutHistory: React.FC<{
                                                                         >
                                                                                 <div className="space-y-1">
                                                                                         <p className="font-medium text-slate-800 dark:text-white leading-tight break-words">{workout.day}</p>
-                                                                                        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed break-words">{workout.focus}</p>
+                                                                                                        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed break-words">{workout.focus}</p>
+                                                                                                        {workout.exerciseName && (
+                                                                                                                <p className="text-xs text-slate-400 dark:text-slate-500 break-words">Exercise: {workout.exerciseName}</p>
+                                                                                                        )}
                                                                                         {workout.completedAt && (
                                                                                                 <p className="text-xs text-slate-400 dark:text-slate-500">Completed: {new Date(workout.completedAt).toLocaleString()}</p>
                                                                                         )}
