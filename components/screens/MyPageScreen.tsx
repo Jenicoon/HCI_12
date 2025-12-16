@@ -21,6 +21,7 @@ const goalLabel = (goal: string) => {
 
 export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, email, onLogout, onUpdateProfile }) => {
   const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
   const [view, setView] = useState<MyPageView>('overview');
   const [editForm, setEditForm] = useState<UserProfile>(user);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -88,64 +89,119 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
   };
 
   return (
-    <div className="min-h-screen text-slate-800 dark:text-white p-4 sm:p-6 lg:p-8 transition-colors duration-300">
+    <div
+      className={`min-h-screen p-4 sm:p-6 lg:p-8 transition-colors duration-300 ${
+        isDark ? 'bg-slate-900 text-white' : 'bg-gray-50 text-slate-800'
+      }`}
+    >
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold">My Page</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your profile, notifications, and preferences.</p>
+          <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'} mt-1`}>
+            Manage your profile, notifications, and preferences.
+          </p>
         </header>
 
         <div className="space-y-8">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10">
+          <div
+            className={`${
+              isDark ? 'bg-slate-800 ring-white/10' : 'bg-white ring-gray-200'
+            } p-6 rounded-xl shadow-md ring-1 transition-colors duration-300`}
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-xl font-bold mb-2 text-cyan-600 dark:text-cyan-400">Profile Overview</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Keep your account details up to date.</p>
+                <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>Profile Overview</h3>
+                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Keep your account details up to date.
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleTheme}
-                  className="p-2 rounded-full bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors duration-200"
+                  className={`p-2 rounded-full transition-colors duration-200 ${
+                    isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
                   aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
                 >
-                  {theme === 'light' ? <MoonIcon className="w-5 h-5 text-slate-800" /> : <SunIcon className="w-5 h-5 text-yellow-400" />}
+                  {theme === 'light' ? (
+                    <MoonIcon className="w-5 h-5 text-slate-800" />
+                  ) : (
+                    <SunIcon className="w-5 h-5 text-yellow-400" />
+                  )}
                 </button>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
               {profileStats.map(item => (
-                <div key={item.label} className="flex justify-between bg-gray-50 dark:bg-slate-700/60 px-3 py-2 rounded-lg text-sm">
-                  <span className="text-slate-500 dark:text-slate-400">{item.label}</span>
+                <div
+                  key={item.label}
+                  className={`flex justify-between px-3 py-2 rounded-lg text-sm transition-colors duration-300 ${
+                    isDark ? 'bg-slate-700/60' : 'bg-gray-50'
+                  }`}
+                >
+                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{item.label}</span>
                   <span className="font-semibold text-right break-words max-w-[60%]">{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10">
-            <h3 className="text-xl font-bold mb-4 text-cyan-600 dark:text-cyan-400">Settings</h3>
+          <div
+            className={`${
+              isDark ? 'bg-slate-800 ring-white/10' : 'bg-white ring-gray-200'
+            } p-6 rounded-xl shadow-md ring-1 transition-colors duration-300`}
+          >
+            <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>Settings</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <button
                 onClick={() => setView('edit')}
-                className={`w-full text-left p-4 rounded-lg transition border ${view === 'edit' ? 'border-cyan-500 bg-cyan-50 dark:bg-slate-700/70 text-cyan-700 dark:text-cyan-200' : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600'}`}
+                className={`w-full text-left p-4 rounded-lg transition border ${
+                  view === 'edit'
+                    ? isDark
+                      ? 'border-cyan-400 bg-slate-700/70 text-cyan-200'
+                      : 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                    : isDark
+                    ? 'border-slate-700 bg-slate-700 hover:bg-slate-600 text-slate-200'
+                    : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-slate-600'
+                }`}
               >
                 Edit Profile
               </button>
               <button
                 onClick={() => setView('notifications')}
-                className={`w-full text-left p-4 rounded-lg transition border ${view === 'notifications' ? 'border-cyan-500 bg-cyan-50 dark:bg-slate-700/70 text-cyan-700 dark:text-cyan-200' : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600'}`}
+                className={`w-full text-left p-4 rounded-lg transition border ${
+                  view === 'notifications'
+                    ? isDark
+                      ? 'border-cyan-400 bg-slate-700/70 text-cyan-200'
+                      : 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                    : isDark
+                    ? 'border-slate-700 bg-slate-700 hover:bg-slate-600 text-slate-200'
+                    : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-slate-600'
+                }`}
               >
                 Notification Settings
               </button>
               <button
                 onClick={() => setView('terms')}
-                className={`w-full text-left p-4 rounded-lg transition border ${view === 'terms' ? 'border-cyan-500 bg-cyan-50 dark:bg-slate-700/70 text-cyan-700 dark:text-cyan-200' : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600'}`}
+                className={`w-full text-left p-4 rounded-lg transition border ${
+                  view === 'terms'
+                    ? isDark
+                      ? 'border-cyan-400 bg-slate-700/70 text-cyan-200'
+                      : 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                    : isDark
+                    ? 'border-slate-700 bg-slate-700 hover:bg-slate-600 text-slate-200'
+                    : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-slate-600'
+                }`}
               >
                 Terms of Service
               </button>
               <button
                 onClick={onLogout}
-                className="w-full text-left p-4 rounded-lg transition border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 dark:border-red-500/50 dark:bg-red-900/30 dark:text-red-200"
+                className={`w-full text-left p-4 rounded-lg transition border ${
+                  isDark
+                    ? 'border-red-500/50 bg-red-900/30 text-red-200 hover:bg-red-900/40'
+                    : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                }`}
               >
                 Log Out
               </button>
@@ -153,13 +209,26 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
           </div>
 
           {view === 'edit' && (
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10 space-y-4 animate-fade-in">
+            <div
+              className={`${
+                isDark ? 'bg-slate-800 ring-white/10' : 'bg-white ring-gray-200'
+              } p-6 rounded-xl shadow-md ring-1 space-y-4 animate-fade-in transition-colors duration-300`}
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-cyan-600 dark:text-cyan-400">Edit Profile</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Update your fitness profile and preferences.</p>
+                  <h3 className={`text-xl font-bold ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>Edit Profile</h3>
+                  <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Update your fitness profile and preferences.
+                  </p>
                 </div>
-                <button onClick={() => setView('overview')} className="text-sm font-semibold text-slate-500 hover:text-cyan-600">Close</button>
+                <button
+                  onClick={() => setView('overview')}
+                  className={`text-sm font-semibold transition-colors ${
+                    isDark ? 'text-slate-400 hover:text-cyan-300' : 'text-slate-500 hover:text-cyan-600'
+                  }`}
+                >
+                  Close
+                </button>
               </div>
               <form onSubmit={handleSaveProfile} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
@@ -170,7 +239,13 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
                         key={option}
                         type="button"
                         onClick={() => handleEditChange('goal', option)}
-                        className={`flex-1 p-3 rounded-lg text-sm font-semibold transition ${editForm.goal === option ? 'bg-cyan-500 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600'}`}
+                        className={`flex-1 p-3 rounded-lg text-sm font-semibold transition ${
+                          editForm.goal === option
+                            ? 'bg-cyan-500 text-white'
+                            : isDark
+                            ? 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+                            : 'bg-gray-100 hover:bg-gray-200 text-slate-700'
+                        }`}
                       >
                         {goalLabel(option)}
                       </button>
@@ -185,7 +260,9 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
                     type="number"
                     value={editForm.height || ''}
                     onChange={event => handleEditChange('height', event.target.value)}
-                    className="w-full p-3 rounded-lg bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600"
+                    className={`w-full p-3 rounded-lg border transition-colors ${
+                      isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200'
+                    }`}
                     required
                   />
                 </div>
@@ -197,7 +274,9 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
                     type="number"
                     value={editForm.weight || ''}
                     onChange={event => handleEditChange('weight', event.target.value)}
-                    className="w-full p-3 rounded-lg bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600"
+                    className={`w-full p-3 rounded-lg border transition-colors ${
+                      isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200'
+                    }`}
                     required
                   />
                 </div>
@@ -209,7 +288,9 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
                     type="number"
                     value={editForm.bodyFat ?? ''}
                     onChange={event => handleEditChange('bodyFat', event.target.value)}
-                    className="w-full p-3 rounded-lg bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600"
+                    className={`w-full p-3 rounded-lg border transition-colors ${
+                      isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200'
+                    }`}
                   />
                 </div>
 
@@ -221,7 +302,13 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
                         key={option}
                         type="button"
                         onClick={() => handleEditChange('workoutPreference', option)}
-                        className={`flex-1 p-3 rounded-lg text-sm font-semibold transition ${editForm.workoutPreference === option ? 'bg-cyan-500 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600'}`}
+                        className={`flex-1 p-3 rounded-lg text-sm font-semibold transition ${
+                          editForm.workoutPreference === option
+                            ? 'bg-cyan-500 text-white'
+                            : isDark
+                            ? 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+                            : 'bg-gray-100 hover:bg-gray-200 text-slate-700'
+                        }`}
                       >
                         {option === 'home' ? 'Home' : 'Gym'}
                       </button>
@@ -235,7 +322,9 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
                     id="healthConditions"
                     value={editForm.healthConditions ?? ''}
                     onChange={event => handleEditChange('healthConditions', event.target.value)}
-                    className="w-full p-3 rounded-lg bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600"
+                    className={`w-full p-3 rounded-lg border transition-colors ${
+                      isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200'
+                    }`}
                     rows={2}
                     placeholder="Allergies, injuries, or other notes"
                   />
@@ -248,17 +337,25 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
                     type="text"
                     value={editForm.availableEquipment ?? ''}
                     onChange={event => handleEditChange('availableEquipment', event.target.value)}
-                    className="w-full p-3 rounded-lg bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600"
+                    className={`w-full p-3 rounded-lg border transition-colors ${
+                      isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200'
+                    }`}
                     placeholder="e.g., dumbbells, kettlebell, resistance bands"
                   />
                 </div>
 
                 {saveMessage && (
-                  <div className="md:col-span-2 text-sm text-slate-600 dark:text-slate-300">{saveMessage}</div>
+                  <div className={`md:col-span-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{saveMessage}</div>
                 )}
 
                 <div className="md:col-span-2 flex justify-end gap-3">
-                  <button type="button" onClick={() => setView('overview')} className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600">
+                  <button
+                    type="button"
+                    onClick={() => setView('overview')}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-gray-100 hover:bg-gray-200 text-slate-700'
+                    }`}
+                  >
                     Cancel
                   </button>
                   <button
@@ -274,13 +371,28 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
           )}
 
           {view === 'notifications' && (
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10 space-y-4 animate-fade-in">
+            <div
+              className={`${
+                isDark ? 'bg-slate-800 ring-white/10' : 'bg-white ring-gray-200'
+              } p-6 rounded-xl shadow-md ring-1 space-y-4 animate-fade-in transition-colors duration-300`}
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-cyan-600 dark:text-cyan-400">Notification Settings</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Control how we keep you updated.</p>
+                  <h3 className={`text-xl font-bold ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                    Notification Settings
+                  </h3>
+                  <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Control how we keep you updated.
+                  </p>
                 </div>
-                <button onClick={() => setView('overview')} className="text-sm font-semibold text-slate-500 hover:text-cyan-600">Close</button>
+                <button
+                  onClick={() => setView('overview')}
+                  className={`text-sm font-semibold transition-colors ${
+                    isDark ? 'text-slate-400 hover:text-cyan-300' : 'text-slate-500 hover:text-cyan-600'
+                  }`}
+                >
+                  Close
+                </button>
               </div>
               <div className="space-y-3">
                 {[
@@ -288,10 +400,15 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
                   { key: 'email', label: 'Email updates', description: 'Weekly summaries and plan updates.' },
                   { key: 'reminders', label: 'Daily reminders', description: 'Motivational nudges and hydration checks.' },
                 ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
+                  <div
+                    key={item.key}
+                    className={`flex items-center justify-between p-3 rounded-lg transition-colors duration-300 ${
+                      isDark ? 'bg-slate-700' : 'bg-gray-50'
+                    }`}
+                  >
                     <div>
                       <p className="font-semibold">{item.label}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{item.description}</p>
+                      <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{item.description}</p>
                     </div>
                     <label className="inline-flex items-center cursor-pointer">
                       <input
@@ -304,7 +421,9 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
                         className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
                           notificationSettings[item.key as keyof typeof notificationSettings]
                             ? 'bg-cyan-500'
-                            : 'bg-gray-300 dark:bg-slate-600'
+                            : isDark
+                            ? 'bg-slate-600'
+                            : 'bg-gray-300'
                         }`}
                       >
                         <span
@@ -321,22 +440,37 @@ export const MyPageScreen: React.FC<MyPageScreenProps> = ({ user, accountName, e
           )}
 
           {view === 'terms' && (
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10 space-y-4 animate-fade-in">
+            <div
+              className={`${
+                isDark ? 'bg-slate-800 ring-white/10' : 'bg-white ring-gray-200'
+              } p-6 rounded-xl shadow-md ring-1 space-y-4 animate-fade-in transition-colors duration-300`}
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-cyan-600 dark:text-cyan-400">Terms of Service</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Quick summary of how we handle your data.</p>
+                  <h3 className={`text-xl font-bold ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>Terms of Service</h3>
+                  <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Quick summary of how we handle your data.
+                  </p>
                 </div>
-                <button onClick={() => setView('overview')} className="text-sm font-semibold text-slate-500 hover:text-cyan-600">Close</button>
+                <button
+                  onClick={() => setView('overview')}
+                  className={`text-sm font-semibold transition-colors ${
+                    isDark ? 'text-slate-400 hover:text-cyan-300' : 'text-slate-500 hover:text-cyan-600'
+                  }`}
+                >
+                  Close
+                </button>
               </div>
-              <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 dark:text-slate-300">
+              <ol className={`list-decimal list-inside space-y-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                 <li>We store your profile securely to personalize training and nutrition guidance.</li>
                 <li>You can update or delete your profile at any time from this page.</li>
                 <li>Notifications are optional and you can opt out with the toggles above.</li>
                 <li>We never sell your personal data. Third-party access is limited to services needed to run the app.</li>
                 <li>Using the service means you agree to these terms and our fair-use policy.</li>
               </ol>
-              <p className="text-xs text-slate-500 dark:text-slate-400">This is a placeholder summary. Replace with your legal text when ready.</p>
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                This is a placeholder summary. Replace with your legal text when ready.
+              </p>
             </div>
           )}
         </div>

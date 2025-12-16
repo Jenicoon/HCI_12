@@ -3,7 +3,17 @@
 /* Base layout helpers */
 :root { color-scheme: light dark; }
 html, body, #root { height: 100%; }
-body { margin: 0; background-color: #f8fafc; }
+body {
+	margin: 0;
+	background-color: #f8fafc;
+	color: #0f172a;
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark {
+	background-color: #0f172a;
+	color: #e2e8f0;
+}
 
 /* Map marker styling for Reservation screen */
 .gym-marker {

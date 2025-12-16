@@ -403,7 +403,7 @@ export const ReservationScreen: React.FC = () => {
             userMarkerRef.current.setMap(map);
         }
 
-        if (userLocation || centerOnUserRef.current) {
+        if (centerOnUserRef.current && userLocation) {
             map.panTo(position);
             if (typeof map.getLevel === 'function' && typeof map.setLevel === 'function') {
                 const currentLevel = map.getLevel();
@@ -411,7 +411,6 @@ export const ReservationScreen: React.FC = () => {
                     map.setLevel(5);
                 }
             }
-            centerOnUserRef.current = false;
         }
     }, [userLocation]);
 
@@ -475,6 +474,10 @@ export const ReservationScreen: React.FC = () => {
         const maps = kakaoMapsRef.current;
         const map = mapRef.current;
         if (!maps || !map || !mapLoadedRef.current || hasFittedBoundsRef.current) {
+            return;
+        }
+        if (centerOnUserRef.current) {
+            centerOnUserRef.current = false;
             return;
         }
         if (!gymsWithDistance.length && !userLocation) {
