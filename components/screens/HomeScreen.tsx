@@ -1,25 +1,75 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import type { FitnessPlan, UserProfile, Exercise, Meal } from '../../types';
+import type { ExerciseVideo } from '../../services/exerciseVideoService';
+import { fetchExerciseVideos } from '../../services/exerciseVideoService';
 
 interface HomeScreenProps {
   plan: FitnessPlan;
   user: UserProfile;
 }
 
-const TodaysWorkout: React.FC<{ workout: FitnessPlan['workoutPlan'][0] }> = ({ workout }) => (
+interface VideoState {
+  exercise: string | null;
+  videos: ExerciseVideo[];
+  loading: boolean;
+  error: string | null;
+}
+
+const TodaysWorkout: React.FC<{
+  workout: FitnessPlan['workoutPlan'][0];
+  videoState: VideoState;
+  onVideoRequest: (exercise: string) => void;
+}> = ({ workout, videoState, onVideoRequest }) => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10">
     <h3 className="text-xl font-bold mb-1 text-cyan-600 dark:text-cyan-400">Today's Workout: {workout.focus}</h3>
     <p className="text-slate-500 dark:text-slate-400 mb-4">{workout.day}</p>
     {workout.exercises && workout.exercises.length > 0 ? (
       <div className="space-y-3">
-        {workout.exercises.map((ex: Exercise, index: number) => (
-          <div key={index} className="bg-gray-50 dark:bg-slate-700 p-3 rounded-lg">
-            <div className="flex justify-between items-center">
-              <h4 className="font-semibold text-slate-800 dark:text-white">{ex.name}</h4>
-              <span className="text-sm font-mono bg-white dark:bg-slate-800 px-2 py-1 rounded text-cyan-600 dark:text-cyan-400 ring-1 ring-gray-200 dark:ring-slate-600">{ex.sets}x{ex.reps}</span>
+        {workout.exercises.map((ex: Exercise, index: number) => {
+          const isActive = videoState.exercise === ex.name;
+          return (
+            <div key={index} className="bg-gray-50 dark:bg-slate-700 p-3 rounded-lg space-y-3">
+              <div className="flex justify-between items-center">
+                <h4 className="font-semibold text-slate-800 dark:text-white">{ex.name}</h4>
+                <span className="text-sm font-mono bg-white dark:bg-slate-800 px-2 py-1 rounded text-cyan-600 dark:text-cyan-400 ring-1 ring-gray-200 dark:ring-slate-600">{ex.sets}x{ex.reps}</span>
+              </div>
+              <div className="flex flex-wrap justify-between items-center gap-2">
+                <p className="text-sm text-slate-600 dark:text-slate-300 flex-1">{ex.description}</p>
+                <button
+                  onClick={() => onVideoRequest(ex.name)}
+                  className="px-3 py-1 text-sm font-semibold bg-cyan-500 hover:bg-cyan-400 text-white rounded-full"
+                >
+                  {isActive ? '영상 다시 보기' : '영상 보기'}
+                </button>
+              </div>
+              {isActive && (
+                <div className="bg-white/70 dark:bg-slate-800/80 p-3 rounded-lg space-y-2">
+                  {videoState.loading && <p className="text-sm text-slate-500 dark:text-slate-300">영상을 불러오는 중입니다…</p>}
+                  {videoState.error && <p className="text-sm text-red-500">{videoState.error}</p>}
+                  {!videoState.loading && !videoState.error && videoState.videos.length > 0 && (
+                    <ul className="space-y-2">
+                      {videoState.videos.map(video => (
+                        <li key={video.url ?? video.title}>
+                          <a
+                            href={video.url ?? '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-cyan-600 dark:text-cyan-300 underline"
+                          >
+                            {video.title} <span className="text-xs text-slate-500">({video.channel})</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {!videoState.loading && !videoState.error && videoState.videos.length === 0 && (
+                    <p className="text-sm text-slate-500 dark:text-slate-300">표시할 영상이 없습니다.</p>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     ) : (
       <p className="text-slate-500 dark:text-slate-400">Rest day! Enjoy your recovery.</p>
@@ -57,6 +107,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ plan, user }) => {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const todaysWorkout = plan.workoutPlan.find(d => d.day === today) || plan.workoutPlan[0];
   const todaysDiet = plan.dietPlan.find(d => d.day === today) || plan.dietPlan[0];
+  const [videoState, setVideoState] = useState<VideoState>({ exercise: null, videos: [], loading: false, error: null });
+
+  const handleVideoRequest = useCallback(async (exerciseName: string) => {
+    setVideoState(prev => ({ ...prev, exercise: exerciseName, videos: [], loading: true, error: null }));
+    try {
+      const videos = await fetchExerciseVideos(exerciseName, 3);
+      setVideoState({ exercise: exerciseName, videos, loading: false, error: null });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '영상 정보를 불러오지 못했습니다.';
+      setVideoState({ exercise: exerciseName, videos: [], loading: false, error: message });
+    }
+  }, []);
 
   return (
     <div className="min-h-screen text-slate-800 dark:text-white p-4 sm:p-6 lg:p-8 transition-colors duration-300">
@@ -73,7 +135,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ plan, user }) => {
         </div>
         
         <div className="space-y-8">
-          <TodaysWorkout workout={todaysWorkout} />
+          <TodaysWorkout workout={todaysWorkout} videoState={videoState} onVideoRequest={handleVideoRequest} />
           <TodaysDiet diet={todaysDiet} />
         </div>
       </div>

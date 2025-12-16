@@ -12,17 +12,21 @@ import { ChatBubbleIcon } from './components/icons';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { OwnerDashboard } from './components/owner/OwnerDashboard';
 import { useAuth } from './context/AuthContext';
+import { getStoredPlanForMember } from './services/planService';
 
 type AppState = 'onboarding' | 'loading' | 'dashboard' | 'error';
 export type Tab = 'home' | 'reservations' | 'log' | 'mypage';
 
 
-const LoadingSpinner: React.FC = () => (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-white">
-        <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-cyan-500"></div>
-        <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">Generating your personalized plan...</p>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-500">This might take a moment.</p>
-    </div>
+const LoadingSpinner: React.FC<{ message?: string; helperText?: string }> = ({
+  message = '잠시만 기다려 주세요…',
+  helperText = 'This might take a moment.',
+}) => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-white">
+    <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-cyan-500"></div>
+    <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">{message}</p>
+    <p className="mt-2 text-sm text-slate-500 dark:text-slate-500">{helperText}</p>
+  </div>
 );
 
 const ErrorDisplay: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
@@ -40,44 +44,124 @@ const ErrorDisplay: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
 
 
 function App() {
-  const { currentUser, logout, updateMemberProfile } = useAuth();
+  const { currentUser, loading, logout, updateMemberProfile } = useAuth();
   const [appState, setAppState] = useState<AppState>('onboarding');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [fitnessPlan, setFitnessPlan] = useState<FitnessPlan | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [planOwnerId, setPlanOwnerId] = useState<string | null>(null);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const isMember = currentUser?.role === 'member';
+  const memberId = isMember ? currentUser.id : null;
+  const memberProfile = isMember ? currentUser.profile ?? null : null;
 
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'member') {
+    if (!isMember || !memberId) {
       setUserProfile(null);
       setFitnessPlan(null);
+      setPlanOwnerId(null);
       setActiveTab('home');
       setAppState('onboarding');
       setIsChatOpen(false);
+      return;
     }
-  }, [currentUser]);
+
+    setActiveTab('home');
+    setIsChatOpen(false);
+    setUserProfile(memberProfile);
+
+    if (!memberProfile) {
+      setFitnessPlan(null);
+      setPlanOwnerId(null);
+      setAppState('onboarding');
+      return;
+    }
+
+    if (planOwnerId && planOwnerId !== memberId) {
+      setFitnessPlan(null);
+      setPlanOwnerId(null);
+    }
+
+    if (planOwnerId === memberId && fitnessPlan) {
+      setAppState('dashboard');
+      return;
+    }
+
+    if (isGeneratingPlan) {
+      setAppState('loading');
+      return;
+    }
+
+    let cancelled = false;
+
+    // Hydrate existing plans from Firestore so members land on their dashboard immediately.
+    const loadStoredPlan = async () => {
+      setAppState('loading');
+      try {
+        const storedPlan = await getStoredPlanForMember(memberId);
+        if (cancelled) {
+          return;
+        }
+        if (storedPlan) {
+          setFitnessPlan(storedPlan);
+          setPlanOwnerId(memberId);
+          setAppState('dashboard');
+        } else {
+          setFitnessPlan(null);
+          setPlanOwnerId(null);
+          setAppState('onboarding');
+        }
+      } catch (error) {
+        console.error('Failed to load stored fitness plan:', error);
+        if (!cancelled) {
+          setFitnessPlan(null);
+          setPlanOwnerId(null);
+          setAppState('onboarding');
+        }
+      }
+    };
+
+    loadStoredPlan();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isMember, memberId, memberProfile, planOwnerId, fitnessPlan, isGeneratingPlan]);
 
   const handleOnboardingComplete = useCallback(async (profile: UserProfile) => {
-    setUserProfile(profile);
-    updateMemberProfile(profile);
+    if (!memberId) {
+      return;
+    }
+    setIsGeneratingPlan(true);
     setAppState('loading');
+    setUserProfile(profile);
     try {
-      const plan = await generateFitnessPlan(profile);
+      await updateMemberProfile(profile);
+      const plan = await generateFitnessPlan(memberId, profile);
       setFitnessPlan(plan);
+      setPlanOwnerId(memberId);
       setAppState('dashboard');
     } catch (error) {
       console.error(error);
       setAppState('error');
+    } finally {
+      setIsGeneratingPlan(false);
     }
-  }, [updateMemberProfile]);
+  }, [memberId, updateMemberProfile]);
   
   const handleRetry = () => {
-      setAppState('onboarding');
-      setUserProfile(null);
-      setFitnessPlan(null);
-  }
+    setAppState('onboarding');
+    setUserProfile(null);
+    setFitnessPlan(null);
+    setPlanOwnerId(null);
+    setIsGeneratingPlan(false);
+  };
 
   if (!currentUser) {
+    if (loading) {
+      return <LoadingSpinner message="세션을 확인하는 중입니다..." helperText="곧 로그인 상태를 불러올게요." />;
+    }
     return <AuthScreen />;
   }
 
@@ -90,7 +174,12 @@ function App() {
       case 'onboarding':
         return <Onboarding onComplete={handleOnboardingComplete} />;
       case 'loading':
-        return <LoadingSpinner />;
+        return (
+          <LoadingSpinner
+            message="맞춤형 운동 플랜을 생성하고 있어요."
+            helperText="AI가 프로필을 반영해 일주일 일정을 작성 중입니다."
+          />
+        );
       case 'dashboard':
         if (fitnessPlan && userProfile) {
           return (
@@ -133,7 +222,7 @@ function App() {
           >
             <ChatBubbleIcon className="w-8 h-8" />
           </button>
-          {isChatOpen && <Chatbot onClose={() => setIsChatOpen(false)} />}
+          {isChatOpen && <Chatbot onClose={() => setIsChatOpen(false)} memberId={memberId} />}
         </>
       )}
     </div>

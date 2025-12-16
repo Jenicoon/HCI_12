@@ -15,7 +15,10 @@ View your app in AI Studio: https://ai.studio/apps/drive/1lZsOv68S9iBfvVRmfrkg9v
 
 1. Install dependencies:
    `npm install`
-2. Copy `.env` and set `VITE_API_KEY` to your Gemini API key
+2. Copy `.env` and set the following environment variables:
+   - `VITE_API_KEY`: Gemini API key
+   - `VITE_KAKAO_REST_API_KEY`: Kakao REST API key for address lookup
+   - `VITE_KAKAO_JAVASCRIPT_KEY`: Kakao Maps JavaScript key for the embedded maps
 3. Run the app:
    `npm run dev`
 

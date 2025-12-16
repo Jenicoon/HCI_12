@@ -52,7 +52,15 @@ export const AuthScreen: React.FC = () => {
         setConfirmPassword('');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed. Please try again.');
+      if (err instanceof Error) {
+        if (err.message.includes('auth/invalid-credential')) {
+          setError('이메일 또는 비밀번호가 올바르지 않습니다. 다시 확인해 주세요.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Authentication failed. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }

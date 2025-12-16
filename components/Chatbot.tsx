@@ -5,6 +5,7 @@ import { CloseIcon, SendIcon } from './icons';
 
 interface ChatbotProps {
   onClose: () => void;
+    memberId?: string | null;
 }
 
 const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
@@ -25,7 +26,7 @@ const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
 };
 
 
-export const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
+export const Chatbot: React.FC<ChatbotProps> = ({ onClose, memberId }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'model', text: 'Hello! How can I help you with your fitness journey today?' }
   ]);
@@ -43,13 +44,15 @@ export const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
     e.preventDefault();
     if (input.trim() === '' || isLoading) return;
 
-    const userMessage: ChatMessage = { role: 'user', text: input.trim() };
+        const trimmed = input.trim();
+        const userMessage: ChatMessage = { role: 'user', text: trimmed };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const responseText = await sendMessageToChat(userMessage.text);
+            const history = messages;
+            const responseText = await sendMessageToChat({ memberId, message: trimmed, history });
       const modelMessage: ChatMessage = { role: 'model', text: responseText };
       setMessages(prev => [...prev, modelMessage]);
     } catch (error) {
