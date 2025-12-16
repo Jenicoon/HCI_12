@@ -23,11 +23,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     const root = window.document.documentElement;
+    const body = window.document.body;
+    // Keep class, dataset, and color-scheme in sync so Tailwind dark variants and native UI elements agree.
     if (theme === 'dark') {
       root.classList.add('dark');
+      body.classList.add('dark');
     } else {
       root.classList.remove('dark');
+      body.classList.remove('dark');
     }
+    root.dataset.theme = theme;
+    body.dataset.theme = theme;
+    root.style.colorScheme = theme;
+    body.style.colorScheme = theme;
     localStorage.setItem('theme', theme);
   }, [theme]);
 

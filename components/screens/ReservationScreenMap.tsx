@@ -97,6 +97,7 @@ export const ReservationScreen: React.FC = () => {
     const userMarkerRef = useRef<any>(null);
     const gymMarkersRef = useRef<GymOverlayRecord[]>([]);
     const hasFittedBoundsRef = useRef(false);
+    const centerOnUserRef = useRef(false);
 
     const requestLocation = useCallback(() => {
         if (!navigator.geolocation) {
@@ -106,6 +107,11 @@ export const ReservationScreen: React.FC = () => {
         }
         setIsLocating(true);
         hasFittedBoundsRef.current = false;
+        centerOnUserRef.current = true;
+        setSelectedGymId(null);
+        setSelectedCategory(null);
+        setSelectedEquipment(null);
+        setSelectedTime(null);
         navigator.geolocation.getCurrentPosition(
             position => {
                 setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
@@ -397,7 +403,7 @@ export const ReservationScreen: React.FC = () => {
             userMarkerRef.current.setMap(map);
         }
 
-        if (userLocation) {
+        if (userLocation || centerOnUserRef.current) {
             map.panTo(position);
             if (typeof map.getLevel === 'function' && typeof map.setLevel === 'function') {
                 const currentLevel = map.getLevel();
@@ -405,6 +411,7 @@ export const ReservationScreen: React.FC = () => {
                     map.setLevel(5);
                 }
             }
+            centerOnUserRef.current = false;
         }
     }, [userLocation]);
 
@@ -665,7 +672,7 @@ export const ReservationScreen: React.FC = () => {
                                         </select>
                                     ) : (
                                         <p className="text-sm text-red-500 dark:text-red-400">
-                                            선택 가능한 시간이 없습니다. 다른 장비나 날짜를 시도해 주세요.
+                                            No available time slots. Try another machine or time.
                                         </p>
                                     )}
                                 </div>
@@ -695,7 +702,7 @@ export const ReservationScreen: React.FC = () => {
                                         <li key={res.id} className="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg">
                                             <p className="font-bold text-slate-800 dark:text-white">{equipment?.name ?? 'Equipment unavailable'}</p>
                                             <p className="text-sm text-slate-500 dark:text-slate-300">{gym?.name ?? 'Gym removed'}</p>
-                                            <p className="text-xs text-slate-400 dark:text-slate-500">{res.date.toDate().toLocaleDateString('ko-KR')}</p>
+                                            <p className="text-xs text-slate-400 dark:text-slate-500">{res.date.toDate().toLocaleDateString('en-US')}</p>
                                             <p className="text-sm font-semibold text-cyan-600 dark:text-cyan-400 mt-1 font-mono">
                                                 {res.timeSlot} - {endTime}
                                             </p>

@@ -154,7 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (!snapshot.exists()) {
       const timestampIso = new Date().toISOString();
-      const derivedName = (credential.user.displayName ?? email.split('@')[0] ?? '').trim() || '사용자';
+      const derivedName = (credential.user.displayName ?? email.split('@')[0] ?? '').trim() || 'User';
       const normalizedEmail = (credential.user.email ?? email).trim();
 
       if (role === 'owner') {
@@ -187,8 +187,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await signOut(firebaseAuth);
       const message =
         userData.role === 'owner'
-          ? '이 계정은 헬스장(오너) 계정입니다. 로그인 유형에서 Gym Owner를 선택해 주세요.'
-          : '이 계정은 회원 계정입니다. 로그인 유형에서 Member를 선택해 주세요.';
+          ? 'This account is for a gym owner. Please choose "Gym Owner" as the login role.'
+          : 'This account is for a member. Please choose "Member" as the login role.';
       throw new Error(message);
     }
   }, []);
@@ -200,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           await updateProfile(firebaseAuth.currentUser, { displayName: name.trim() });
         } catch (error) {
-          console.warn('프로필 표시 이름 업데이트 실패:', error);
+          console.warn('Failed to update profile display name:', error);
         }
       }
 

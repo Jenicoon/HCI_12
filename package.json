@@ -17,6 +17,7 @@
     "recharts": "^3.3.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",

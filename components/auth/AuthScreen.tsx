@@ -4,12 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 
 const roleCopy: Record<UserRole, { title: string; description: string }> = {
   owner: {
-    title: 'Gym Owner Portal',
-    description: 'Register your gym, keep equipment availability up to date, and manage reservations from members.',
+    title: 'Gym Owner',
+    description: 'Manage gym details, equipment, and reservations in one place.',
   },
   member: {
-    title: 'Member Access',
-    description: 'Discover nearby gyms, generate AI fitness plans, and reserve equipment before you arrive.',
+    title: 'Member',
+    description: 'Find gyms, book equipment, and follow your AI fitness plan.',
   },
 };
 
@@ -54,7 +54,7 @@ export const AuthScreen: React.FC = () => {
     } catch (err) {
       if (err instanceof Error) {
         if (err.message.includes('auth/invalid-credential')) {
-          setError('이메일 또는 비밀번호가 올바르지 않습니다. 다시 확인해 주세요.');
+          setError('Email or password is incorrect. Please try again.');
         } else {
           setError(err.message);
         }
@@ -71,33 +71,27 @@ export const AuthScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-white flex items-center justify-center px-4 py-12 transition-colors duration-300">
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <section className="bg-gradient-to-br from-cyan-500 via-blue-500 to-blue-600 text-white rounded-3xl p-8 lg:p-10 shadow-lg">
-          <h1 className="text-3xl font-extrabold mb-4">AI Fitness Platform</h1>
-          <p className="text-white/90 mb-10">
-            Seamlessly connect gym owners and members. Owners can publish rich gym profiles, while members reserve equipment and follow personalized AI-generated plans.
-          </p>
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-semibold mb-1">{roleDetails.title}</h2>
-              <p className="text-white/80 text-sm leading-relaxed">{roleDetails.description}</p>
-            </div>
-            <ul className="space-y-3 text-sm text-white/80">
-              <li>• Secure {role === 'owner' ? 'owner' : 'member'} account with email login</li>
-              <li>• Switch between owner and member roles at any time</li>
-              <li>• All data stored locally for rapid prototyping</li>
-            </ul>
+      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-8">
+        <section className="bg-gradient-to-br from-cyan-500 via-blue-500 to-blue-600 text-white rounded-3xl p-8 lg:p-10 shadow-lg flex flex-col justify-between">
+          <div className="space-y-4">
+            <p className="text-sm uppercase tracking-[0.2em] font-semibold text-white/80">AI Fitness</p>
+            <h1 className="text-3xl font-extrabold">Sign in to train smarter.</h1>
+            <p className="text-white/90 text-sm leading-relaxed">One login for owners and members. Stay synced across reservations, progress, and chat.</p>
+          </div>
+          <div className="mt-8 space-y-2 text-sm text-white/80">
+            <p className="font-semibold">{roleDetails.title}</p>
+            <p>{roleDetails.description}</p>
           </div>
         </section>
 
         <section className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-8 lg:p-10 ring-1 ring-gray-200 dark:ring-white/10">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{mode === 'login' ? 'Log In' : 'Create Account'}</h2>
             <button
               onClick={() => setMode(prev => (prev === 'login' ? 'signup' : 'login'))}
               className="text-sm font-semibold text-cyan-600 hover:text-cyan-500"
             >
-              {mode === 'login' ? 'Need an account?' : 'Already registered?'}
+              {mode === 'login' ? 'Create account' : 'Use existing account'}
             </button>
           </div>
 
@@ -216,10 +210,6 @@ export const AuthScreen: React.FC = () => {
               {isSubmitting ? 'Please wait…' : mode === 'login' ? 'Log In' : 'Sign Up'}
             </button>
           </form>
-
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-6 text-center">
-            Demo notice: accounts are stored locally in your browser for prototyping and can be cleared via browser storage settings.
-          </p>
         </section>
       </div>
     </div>

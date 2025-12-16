@@ -63,10 +63,10 @@ export const sendMessageToChat = async ({ memberId, message, history }: SendChat
     if (payload?.reply) {
       return payload.reply as string;
     }
-    return '답변을 이해하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+    return 'Sorry, I could not understand that. Please try again.';
   } catch (error) {
     console.error('sendMessageToChat error:', error);
-    return 'AI 코치와 통신하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+    return 'There was a problem talking to the AI coach. Please try again soon.';
   }
 };
 

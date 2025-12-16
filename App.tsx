@@ -12,6 +12,7 @@ import { ChatBubbleIcon } from './components/icons';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { OwnerDashboard } from './components/owner/OwnerDashboard';
 import { useAuth } from './context/AuthContext';
+import { useTheme } from './context/ThemeContext';
 import { getStoredPlanForMember } from './services/planService';
 
 type AppState = 'onboarding' | 'loading' | 'dashboard' | 'error';
@@ -19,7 +20,7 @@ export type Tab = 'home' | 'reservations' | 'log' | 'mypage';
 
 
 const LoadingSpinner: React.FC<{ message?: string; helperText?: string }> = ({
-  message = '잠시만 기다려 주세요…',
+  message = 'Loading…',
   helperText = 'This might take a moment.',
 }) => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-white">
@@ -45,6 +46,7 @@ const ErrorDisplay: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
 
 function App() {
   const { currentUser, loading, logout, updateMemberProfile } = useAuth();
+  const { theme } = useTheme();
   const [appState, setAppState] = useState<AppState>('onboarding');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [fitnessPlan, setFitnessPlan] = useState<FitnessPlan | null>(null);
@@ -149,6 +151,14 @@ function App() {
       setIsGeneratingPlan(false);
     }
   }, [memberId, updateMemberProfile]);
+
+  const handleProfileUpdate = useCallback(
+    async (updatedProfile: UserProfile) => {
+      await updateMemberProfile(updatedProfile);
+      setUserProfile(updatedProfile);
+    },
+    [updateMemberProfile]
+  );
   
   const handleRetry = () => {
     setAppState('onboarding');
@@ -160,7 +170,7 @@ function App() {
 
   if (!currentUser) {
     if (loading) {
-      return <LoadingSpinner message="세션을 확인하는 중입니다..." helperText="곧 로그인 상태를 불러올게요." />;
+      return <LoadingSpinner message="Checking your session…" helperText="We will load your account in a moment." />;
     }
     return <AuthScreen />;
   }
@@ -176,8 +186,8 @@ function App() {
       case 'loading':
         return (
           <LoadingSpinner
-            message="맞춤형 운동 플랜을 생성하고 있어요."
-            helperText="AI가 프로필을 반영해 일주일 일정을 작성 중입니다."
+            message="Generating your personalized plan…"
+            helperText="We are preparing a week of workouts based on your profile."
           />
         );
       case 'dashboard':
@@ -194,6 +204,7 @@ function App() {
                     accountName={currentUser?.name ?? ''}
                     email={currentUser?.email ?? ''}
                     onLogout={logout}
+                    onUpdateProfile={handleProfileUpdate}
                   />
                 )}
               </main>
@@ -211,20 +222,22 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen transition-colors duration-300">
-      {renderContent()}
-      {appState === 'dashboard' && (
-        <>
-          <button
-            onClick={() => setIsChatOpen(true)}
-            className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-30 w-16 h-16 bg-cyan-600 rounded-full text-white flex items-center justify-center shadow-lg hover:bg-cyan-500 transition-transform transform hover:scale-110"
-            aria-label="Open AI Chat"
-          >
-            <ChatBubbleIcon className="w-8 h-8" />
-          </button>
-          {isChatOpen && <Chatbot onClose={() => setIsChatOpen(false)} memberId={memberId} />}
-        </>
-      )}
+    <div className={theme === 'dark' ? 'dark' : ''}>
+      <div className="min-h-screen transition-colors duration-300 bg-gray-50 dark:bg-slate-900">
+        {renderContent()}
+        {appState === 'dashboard' && (
+          <>
+            <button
+              onClick={() => setIsChatOpen(true)}
+              className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-30 w-16 h-16 bg-cyan-600 rounded-full text-white flex items-center justify-center shadow-lg hover:bg-cyan-500 transition-transform transform hover:scale-110"
+              aria-label="Open AI Chat"
+            >
+              <ChatBubbleIcon className="w-8 h-8" />
+            </button>
+            {isChatOpen && <Chatbot onClose={() => setIsChatOpen(false)} memberId={memberId} />}
+          </>
+        )}
+      </div>
     </div>
   );
 }

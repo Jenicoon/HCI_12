@@ -18,7 +18,7 @@ export const fetchExerciseVideos = async (query: string, maxResults = 3): Promis
   );
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || '운동 영상을 불러오지 못했습니다.');
+    throw new Error(message || 'Could not load exercise videos.');
   }
   const payload = await response.json();
   return (payload?.videos ?? []) as ExerciseVideo[];

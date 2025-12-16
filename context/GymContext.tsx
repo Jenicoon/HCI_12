@@ -162,11 +162,11 @@ export const GymProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const gymRef = doc(firestore, 'gyms', gymId);
     const snapshot = await getDoc(gymRef);
     if (!snapshot.exists()) {
-      throw new Error('해당 헬스장을 찾을 수 없습니다.');
+      throw new Error('The gym could not be found.');
     }
     const data = snapshot.data();
     if (data.ownerId !== ownerId) {
-      throw new Error('이 헬스장을 수정할 권한이 없습니다.');
+      throw new Error('You do not have permission to update this gym.');
     }
 
     const updatePayload: Record<string, unknown> = {
@@ -193,7 +193,7 @@ export const GymProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     const data = snapshot.data();
     if (data.ownerId !== ownerId) {
-      throw new Error('이 헬스장을 삭제할 권한이 없습니다.');
+      throw new Error('You do not have permission to delete this gym.');
     }
     await deleteDoc(gymRef);
   }, []);

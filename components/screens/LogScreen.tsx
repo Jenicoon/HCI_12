@@ -14,14 +14,14 @@ const ProgressTracker: React.FC<{ data: ProgressData[]; loading: boolean }> = ({
     const tooltipBorder = isDark ? '#334155' : '#e2e8f0';
 
     return (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10">
-            <h3 className="text-xl font-bold mb-4 text-cyan-600 dark:text-cyan-400">Body Composition</h3>
+                <div className="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10 w-full min-w-0">
+                        <h3 className="text-lg sm:text-xl font-bold mb-4 text-cyan-600 dark:text-cyan-400">Body Composition</h3>
                         {loading ? (
-                                <p className="text-sm text-slate-500 dark:text-slate-400">불러오는 중입니다…</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
                         ) : data.length === 0 ? (
-                                <p className="text-sm text-slate-500 dark:text-slate-400">아직 기록된 체성분 데이터가 없습니다.</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">No body composition entries yet.</p>
                         ) : (
-                                <div className="h-80">
+                                <div className="h-80 w-full min-w-0">
                                         <ResponsiveContainer width="100%" height="100%">
                                                 <LineChart data={data}>
                                                         <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
@@ -52,12 +52,12 @@ const WorkoutHistory: React.FC<{
         const groupedEntries = Object.entries(groupedWorkouts) as [string, WorkoutLogEntry[]][];
 
         return (
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10">
-                        <h3 className="text-xl font-bold mb-4 text-cyan-600 dark:text-cyan-400">Past Workouts</h3>
+                <div className="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10">
+                        <h3 className="text-lg sm:text-xl font-bold mb-4 text-cyan-600 dark:text-cyan-400">Past Workouts</h3>
                         {loading ? (
-                                <p className="text-sm text-slate-500 dark:text-slate-400">불러오는 중입니다…</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
                         ) : groupedEntries.length === 0 ? (
-                                <p className="text-sm text-slate-500 dark:text-slate-400">기록된 운동 히스토리가 없습니다.</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">No workout history yet.</p>
                         ) : (
                                 <div className="space-y-6">
                                         {groupedEntries.map(([week, workouts]) => (
@@ -69,11 +69,11 @@ const WorkoutHistory: React.FC<{
                                                                                 key={workout.id}
                                                                                 className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg ${workout.completed ? 'bg-gray-50 dark:bg-slate-700' : 'bg-gray-50/70 dark:bg-slate-700/50'}`}
                                                                         >
-                                                                                <div>
-                                                                                        <p className="font-medium text-slate-800 dark:text-white">{workout.day}</p>
-                                                                                        <p className="text-sm text-slate-500 dark:text-slate-400">{workout.focus}</p>
+                                                                                <div className="space-y-1">
+                                                                                        <p className="font-medium text-slate-800 dark:text-white leading-tight break-words">{workout.day}</p>
+                                                                                        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed break-words">{workout.focus}</p>
                                                                                         {workout.completedAt && (
-                                                                                                <p className="text-xs text-slate-400 dark:text-slate-500">완료: {new Date(workout.completedAt).toLocaleString()}</p>
+                                                                                                <p className="text-xs text-slate-400 dark:text-slate-500">Completed: {new Date(workout.completedAt).toLocaleString()}</p>
                                                                                         )}
                                                                                 </div>
                                                                                 <button
@@ -85,7 +85,7 @@ const WorkoutHistory: React.FC<{
                                                                                         }`}
                                                                                         type="button"
                                                                                 >
-                                                                                        {workout.completed ? '완료 취소' : '완료 표시'}
+                                                                                        {workout.completed ? 'Undo complete' : 'Mark complete'}
                                                                                 </button>
                                                                         </li>
                                                                 ))}
@@ -131,7 +131,7 @@ export const LogScreen: React.FC = () => {
                 console.error('Failed to load progress entries:', error);
                 setProgressEntries([]);
                 setProgressLoading(false);
-                setProgressError('체성분 데이터를 불러오지 못했습니다.');
+                setProgressError('Could not load body composition data.');
             }
         );
         return unsubscribe;
@@ -155,7 +155,7 @@ export const LogScreen: React.FC = () => {
                 console.error('Failed to load workout logs:', error);
                 setWorkoutLogs([]);
                 setWorkoutLoading(false);
-                setWorkoutError('운동 기록을 불러오지 못했습니다.');
+                setWorkoutError('Could not load workout history.');
             }
         );
         return unsubscribe;
@@ -197,7 +197,7 @@ export const LogScreen: React.FC = () => {
         async (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
             if (!memberId) {
-                setProgressError('멤버 계정에서만 기록할 수 있습니다.');
+                                setProgressError('You need a member account to record progress.');
                 return;
             }
             const label = progressForm.label.trim() || `Week ${progressEntries.length + 1}`;
@@ -205,15 +205,15 @@ export const LogScreen: React.FC = () => {
             const bodyFatValue = progressForm.bodyFat ? Number(progressForm.bodyFat) : undefined;
             const muscleValue = progressForm.muscleMass ? Number(progressForm.muscleMass) : undefined;
             if (!Number.isFinite(weightValue)) {
-                setProgressError('체중을 숫자로 입력해 주세요.');
+                                setProgressError('Please enter weight as a number.');
                 return;
             }
             if (progressForm.bodyFat && !Number.isFinite(bodyFatValue)) {
-                setProgressError('체지방률을 숫자로 입력해 주세요.');
+                                setProgressError('Please enter body fat as a number.');
                 return;
             }
             if (progressForm.muscleMass && !Number.isFinite(muscleValue)) {
-                setProgressError('골격근량을 숫자로 입력해 주세요.');
+                                setProgressError('Please enter muscle mass as a number.');
                 return;
             }
             setProgressSubmitting(true);
@@ -228,7 +228,7 @@ export const LogScreen: React.FC = () => {
                 setProgressForm({ label: '', weight: '', bodyFat: '', muscleMass: '' });
             } catch (error) {
                 console.error('Failed to add progress entry:', error);
-                setProgressError('체성분 데이터를 저장하지 못했습니다.');
+                                setProgressError('Could not save body composition entry.');
             } finally {
                 setProgressSubmitting(false);
             }
@@ -240,14 +240,14 @@ export const LogScreen: React.FC = () => {
         async (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
             if (!memberId) {
-                setWorkoutError('멤버 계정에서만 기록할 수 있습니다.');
+                                setWorkoutError('You need a member account to record workouts.');
                 return;
             }
-            const weekLabel = workoutForm.weekLabel.trim() || '이번 주';
+            const weekLabel = workoutForm.weekLabel.trim() || 'This week';
             const day = workoutForm.day.trim();
             const focus = workoutForm.focus.trim();
             if (!day || !focus) {
-                setWorkoutError('운동한 요일과 포커스를 모두 입력해 주세요.');
+                                setWorkoutError('Please enter both the workout day and focus.');
                 return;
             }
             setWorkoutSubmitting(true);
@@ -261,7 +261,7 @@ export const LogScreen: React.FC = () => {
                 setWorkoutForm({ weekLabel: '', day: '', focus: '' });
             } catch (error) {
                 console.error('Failed to add workout log:', error);
-                setWorkoutError('운동 기록을 저장하지 못했습니다.');
+                                setWorkoutError('Could not save workout entry.');
             } finally {
                 setWorkoutSubmitting(false);
             }
@@ -272,14 +272,14 @@ export const LogScreen: React.FC = () => {
     const handleToggleCompletion = useCallback(
         async (workoutId: string, completed: boolean) => {
             if (!memberId) {
-                setWorkoutError('멤버 계정에서만 수정할 수 있습니다.');
+                                setWorkoutError('You need a member account to update workouts.');
                 return;
             }
             try {
                 await toggleWorkoutCompletion(memberId, workoutId, completed);
             } catch (error) {
                 console.error('Failed to toggle workout completion:', error);
-                setWorkoutError('완료 상태를 업데이트하지 못했습니다.');
+                                setWorkoutError('Could not update completion status.');
             }
         },
         [memberId]
@@ -290,31 +290,31 @@ export const LogScreen: React.FC = () => {
             <div className="min-h-screen text-slate-800 dark:text-white p-4 sm:p-6 lg:p-8 transition-colors duration-300">
                 <div className="max-w-3xl mx-auto">
                     <h1 className="text-3xl md:text-4xl font-bold mb-4">Your Journey</h1>
-                    <p className="text-slate-500 dark:text-slate-400">멤버 계정에서만 진행 상황을 확인할 수 있습니다.</p>
+                    <p className="text-slate-500 dark:text-slate-400">Progress tracking is available for member accounts.</p>
                 </div>
             </div>
         );
     }
 
   return (
-    <div className="min-h-screen text-slate-800 dark:text-white p-4 sm:p-6 lg:p-8 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold">Your Journey</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Track your progress and stay consistent.</p>
-        </header>
+                <div className="min-h-screen text-slate-800 dark:text-white p-4 sm:p-6 lg:p-8 transition-colors duration-300">
+                        <div className="max-w-4xl lg:max-w-6xl mx-auto">
+                                <header className="mb-6 sm:mb-8">
+                                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight">Your Journey</h1>
+                                        <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-1">Track your progress and stay consistent.</p>
+                                </header>
 
                 <div className="space-y-8">
                         {progressError && <p className="text-sm text-red-500">{progressError}</p>}
                         <ProgressTracker data={progressData} loading={progressLoading} />
                         <form
                                 onSubmit={handleProgressSubmit}
-                                className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10 space-y-4"
+                                className="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10 space-y-4"
                         >
-                                <h3 className="text-lg font-bold text-cyan-600 dark:text-cyan-400">새 체성분 기록 추가</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="label">라벨</label>
+                                <h3 className="text-lg font-bold text-cyan-600 dark:text-cyan-400">Add body composition entry</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="sm:col-span-2 md:col-span-2">
+                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="label">Label</label>
                                                 <input
                                                         id="label"
                                                         name="label"
@@ -325,7 +325,7 @@ export const LogScreen: React.FC = () => {
                                                 />
                                         </div>
                                         <div>
-                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="weight">체중 (kg)</label>
+                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="weight">Weight (kg)</label>
                                                 <input
                                                         id="weight"
                                                         name="weight"
@@ -338,7 +338,7 @@ export const LogScreen: React.FC = () => {
                                                 />
                                         </div>
                                         <div>
-                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="bodyFat">체지방률 (%)</label>
+                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="bodyFat">Body fat (%)</label>
                                                 <input
                                                         id="bodyFat"
                                                         name="bodyFat"
@@ -350,7 +350,7 @@ export const LogScreen: React.FC = () => {
                                                 />
                                         </div>
                                         <div>
-                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="muscleMass">골격근량 (kg)</label>
+                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="muscleMass">Muscle mass (kg)</label>
                                                 <input
                                                         id="muscleMass"
                                                         name="muscleMass"
@@ -368,7 +368,7 @@ export const LogScreen: React.FC = () => {
                                                 disabled={progressSubmitting}
                                                 className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-400 text-white rounded-md font-semibold"
                                         >
-                                                {progressSubmitting ? '저장 중…' : '기록 저장'}
+                                                {progressSubmitting ? 'Saving…' : 'Save entry'}
                                         </button>
                                 </div>
                         </form>
@@ -377,23 +377,23 @@ export const LogScreen: React.FC = () => {
                         <WorkoutHistory groupedWorkouts={groupedWorkouts} loading={workoutLoading} onToggleCompletion={handleToggleCompletion} />
                         <form
                                 onSubmit={handleWorkoutSubmit}
-                                className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10 space-y-4"
+                                className="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-xl shadow-md ring-1 ring-gray-200 dark:ring-white/10 space-y-4"
                         >
-                                <h3 className="text-lg font-bold text-cyan-600 dark:text-cyan-400">운동 기록 추가</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <h3 className="text-lg font-bold text-cyan-600 dark:text-cyan-400">Add workout log</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                         <div>
-                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="weekLabel">주차 라벨</label>
+                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="weekLabel">Week label</label>
                                                 <input
                                                         id="weekLabel"
                                                         name="weekLabel"
                                                         value={workoutForm.weekLabel}
                                                         onChange={handleWorkoutInputChange}
-                                                        placeholder="이번 주"
+                                                        placeholder="This week"
                                                         className="w-full bg-gray-100 dark:bg-slate-700 border-gray-300 dark:border-slate-600 rounded-md p-2 focus:ring-cyan-500 focus:border-cyan-500"
                                                 />
                                         </div>
                                         <div>
-                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="day">요일</label>
+                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="day">Day</label>
                                                 <input
                                                         id="day"
                                                         name="day"
@@ -405,7 +405,7 @@ export const LogScreen: React.FC = () => {
                                                 />
                                         </div>
                                         <div>
-                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="focus">포커스</label>
+                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" htmlFor="focus">Focus</label>
                                                 <input
                                                         id="focus"
                                                         name="focus"
@@ -423,7 +423,7 @@ export const LogScreen: React.FC = () => {
                                                 disabled={workoutSubmitting}
                                                 className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-400 text-white rounded-md font-semibold"
                                         >
-                                                {workoutSubmitting ? '저장 중…' : '기록 저장'}
+                                                {workoutSubmitting ? 'Saving…' : 'Save entry'}
                                         </button>
                                 </div>
                         </form>

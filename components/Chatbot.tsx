@@ -13,7 +13,7 @@ const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
     return (
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
             <div 
-                className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-2 rounded-2xl ${
+                className={`max-w-[80%] sm:max-w-xs md:max-w-md lg:max-w-lg px-3 py-2 sm:px-4 rounded-2xl break-words leading-relaxed ${
                     isUser 
                     ? 'bg-cyan-500 text-white rounded-br-none' 
                     : 'bg-gray-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-bl-none'
@@ -65,9 +65,9 @@ export const Chatbot: React.FC<ChatbotProps> = ({ onClose, memberId }) => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 w-[calc(100%-3rem)] sm:w-96 h-[70vh] max-h-[700px] flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-2xl ring-1 ring-gray-200 dark:ring-white/10 animate-fade-in-up">
+    <div className="fixed bottom-4 right-3 sm:bottom-6 sm:right-6 z-40 w-[calc(100%-1.5rem)] sm:w-96 max-w-[22rem] h-[70vh] max-h-[80vh] flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-2xl ring-1 ring-gray-200 dark:ring-white/10 animate-fade-in-up">
         {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
+        <header className="flex items-center justify-between px-4 py-3 sm:p-4 border-b border-gray-200 dark:border-slate-700">
             <div>
                 <h3 className="font-bold text-lg text-slate-800 dark:text-white">AI Fitness Coach</h3>
                 <p className="text-xs text-green-500">● Online</p>
@@ -82,7 +82,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ onClose, memberId }) => {
         </header>
 
         {/* Messages */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-4">
+        <div className="flex-1 px-4 py-3 sm:p-4 overflow-y-auto space-y-4">
             {messages.map((msg, index) => (
                 <ChatMessageBubble key={index} message={msg} />
             ))}
@@ -101,8 +101,8 @@ export const Chatbot: React.FC<ChatbotProps> = ({ onClose, memberId }) => {
         </div>
 
         {/* Input Form */}
-        <form onSubmit={handleSend} className="p-4 border-t border-gray-200 dark:border-slate-700">
-            <div className="flex items-center bg-gray-100 dark:bg-slate-700 rounded-full px-2">
+        <form onSubmit={handleSend} className="px-4 py-3 sm:p-4 border-t border-gray-200 dark:border-slate-700">
+            <div className="flex items-center bg-gray-100 dark:bg-slate-700 rounded-full px-2 gap-2">
                 <input 
                     type="text"
                     value={input}
