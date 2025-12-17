@@ -94,6 +94,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         docRef,
         async snapshot => {
           if (!snapshot.exists()) {
+            const creationTime = firebaseUser.metadata?.creationTime;
+            const creationMs = creationTime ? new Date(creationTime).getTime() : null;
+            const isRecentSignup = typeof creationMs === 'number' ? Date.now() - creationMs < 10000 : false;
+
+            if (isRecentSignup) {
+              return;
+            }
+
             const fallbackDoc: UserDocument = {
               role: 'member',
               name: (firebaseUser.displayName ?? firebaseUser.email ?? 'Member').trim() || 'Member',
